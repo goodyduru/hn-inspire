@@ -1,0 +1,34 @@
+{% block content %}
+<div>
+    <h2> Login  </h2>
+
+    {% if login_form.errors %}
+    <p> Your username and password didn't match. Please try again. </p>
+    {% endif %}
+
+    {% if next %}
+    <p> Please login to see this page. </p>
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        {{ login_form }}
+
+        <input type="submit" value="login">
+        <input type="hidden" name="next" value="{{ next }}">
+    </form>
+    <p> <a href="{% url 'password_reset' %}"> Forgot Your Password? </a></p>
+</div>
+
+<div>
+    <h2> Sign Up </h2>
+    <form method="post" action="{% url 'register' %}">
+        {% csrf_token %}
+        {{ register_form }}
+
+        <input type="submit" value="register">
+        <input type="hidden" name="next" value="{{ next }}">
+    </form>
+</div>
+
+{% endblock %}
