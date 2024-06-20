@@ -27,6 +27,10 @@ urlpatterns = [
     path("item/", post_views.PostView.as_view(), name="post"),
     path("comment/", post_views.CommentView.as_view(), name="comment"),
     path("submit/", post_views.SubmitView.as_view(), name="submit"),
+    path("submitted/", post_views.SubmittedView.as_view()),
+    path("threads/", post_views.ThreadView.as_view()),
+    path("favorites/", post_views.FavoritesView.as_view()),
+    path("user/", member_views.ProfileView.as_view()),
     path("login/", member_views.LoginView.as_view(), name="login"),
     path("register/", member_views.RegisterView.as_view(), name="register"),
     path(

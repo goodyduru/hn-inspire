@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from .models import Profile
+
 
 class AddMemberForm(forms.Form):
     username = forms.CharField()
@@ -29,4 +31,6 @@ class AddMemberForm(forms.Form):
             password=self.cleaned_data.get("password"),
         )
         user.save()
+        profile = Profile(user=user)
+        profile.save()
         return user

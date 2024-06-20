@@ -1,0 +1,23 @@
+{% block content %}
+<div>
+    {% if comments %}
+    <ol>
+        {% for comment in comments %}
+        <li>
+            <header>
+                <div>
+                    <span><a href="/user?id={{comment.author.username}}">{{comment.author.username}}</a></span>
+                    <span>{{comment.created_at|timesince}} ago</span> |
+                    <span><a href="/item?id={{comment.parent.pk}}">parent</a></span> |
+                    <span><a href="/item?id={{comment.parent.pk}}#{{comment.pk}}">context</a></span>
+                </div>
+            </header>
+            <article>{{comment.text}}</article>
+        </li>
+        {% endfor %}
+    </ol>
+    {% else %}
+    <p> No comments to show </p>
+    {% endif %}
+</div>
+{% endblock %}

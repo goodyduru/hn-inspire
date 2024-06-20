@@ -13,6 +13,9 @@ class Post(models.Model):
     is_flagged = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    voters = models.ManyToManyField(get_user_model(), related_name="voters")
+    favoriters = models.ManyToManyField(get_user_model(), related_name="favoriters")
+    flaggers = models.ManyToManyField(get_user_model(), related_name="flaggers")
 
     def is_comment(self):
         return self.parent is not None

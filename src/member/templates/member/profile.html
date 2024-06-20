@@ -1,0 +1,9 @@
+{% block content %}
+<p> <span>user: </span>{{ member.username }}</p>
+<p> <span>created: </span>{{ member.date_joined | date:"F j, Y" }}</p>
+<p> <span>karma: </span> {{member.profile.karma}}</p>
+<p> <span>about: </span> {{member.profile.about}}</p>
+<p> <a href="/submitted?id={{member.username}}"> submitted </a></p>
+<p> <a href="/threads?id={{member.username}}"> comments </a></p>
+<p> <a href="/favorites?id={{member.username}}"> favorites </a></p>
+{% endblock %}

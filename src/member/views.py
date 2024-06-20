@@ -1,8 +1,9 @@
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import get_user_model
 from django.contrib.auth.views import RedirectURLMixin
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render, resolve_url
 from django.views import View
 
@@ -78,3 +79,19 @@ class RegisterView(View, RedirectURLMixin):
     def get_default_redirect_url(self):
         """Return the default redirect URL."""
         return resolve_url(settings.LOGIN_REDIRECT_URL)
+
+
+class ProfileView(View):
+    template_name = "member/profile.html"
+
+    def get(self, request, *args, **kwargs):
+        username = request.GET.get("id")
+        try:
+            member = (
+                get_user_model()
+                .objects.select_related("profile")
+                .get(username=username)
+            )
+        except:
+            raise Http404("No such user exists")
+        return render(request, self.template_name, {"member": member})

@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import render, redirect
@@ -14,7 +15,7 @@ class IndexView(View):
     def get(self, request, *args, **kwargs):
         latest_posts = (
             Post.objects.filter(parent=None)
-            .select_related()
+            .select_related("author")
             .order_by("-updated_at")[:5]
         )
         context = {"latest_post_list": latest_posts}
@@ -31,7 +32,7 @@ class PostView(View):
         if post_id is None:
             raise error404
         try:
-            post = Post.objects.select_related().get(pk=int(post_id))
+            post = Post.objects.select_related("author").get(pk=int(post_id))
             comments = (
                 Post.objects.filter(parent=post).select_related().order_by("votes")
             )
@@ -77,3 +78,57 @@ class SubmitView(LoginRequiredMixin, View):
             return redirect("index")
         else:
             return render(request, self.template_name, {"form": submit_form})
+
+
+class SubmittedView(View):
+    template_name = "post/index.html"
+
+    def get(self, request, *args, **kwargs):
+        username = request.GET.get("id")
+        try:
+            user = get_user_model().objects.get(username=username)
+        except:
+            raise Http404("No such user exists")
+        submitted_posts = (
+            Post.objects.filter(parent=None, author=user)
+            .select_related("author")
+            .order_by("-updated_at")[:5]
+        )
+        context = {"latest_post_list": submitted_posts}
+        return render(request, template_name=self.template_name, context=context)
+
+
+class ThreadView(View):
+    template_name = "post/thread.html"
+
+    def get(self, request, *args, **kwargs):
+        username = request.GET.get("id")
+        try:
+            user = get_user_model().objects.get(username=username)
+        except:
+            raise Http404("No such user exists")
+        comments = (
+            Post.objects.filter(parent__isnull=False, author=user)
+            .select_related("author")
+            .order_by("-updated_at")[:5]
+        )
+        context = {"comments": comments}
+        return render(request, template_name=self.template_name, context=context)
+
+
+class FavoritesView(View):
+    template_name = "post/index.html"
+
+    def get(self, request, *args, **kwargs):
+        username = request.GET.get("id")
+        try:
+            user = get_user_model().objects.get(username=username)
+        except:
+            raise Http404("No such user exists")
+        submitted_posts = (
+            Post.objects.filter(parent=None, favoriters=user)
+            .select_related("author")
+            .order_by("-updated_at")[:5]
+        )
+        context = {"latest_post_list": submitted_posts}
+        return render(request, template_name=self.template_name, context=context)
