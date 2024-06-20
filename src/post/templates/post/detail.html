@@ -1,0 +1,54 @@
+{% block content %}
+<section>
+    {% if post.parent == None %}
+    <header>
+        {% if post.url != "" %}
+        <h2><a href="{{post.url}}">{{post.title}}</a></h2>
+        {% else %}
+        <h2>{{post.title}}</h2>
+        {% endif %}
+        <div>
+            <span>{{post.votes}} by </span>
+            <span><a href="/user?id={{post.author.username}}">{{post.author.username}}</a></span>
+            <span>{{post.created_at|timesince}} ago</span>
+        </div>
+    </header>
+    {% if post.text != "" %}
+    <article>{{post.text}}</article>
+    {% endif %}
+    {% else %}
+    <header>
+        <div>
+            <span><a href="/user?id={{post.author.username}}">{{post.author.username}}</a></span>
+            <span>{{post.created_at|timesince}} ago</span> |
+            <span><a href="/item?id={{post.parent.pk}}">parent</a></span> |
+            <span><a href="/item?id={{post.parent.pk}}#{{post.pk}}">context</a></span>
+        </div>
+    </header>
+    <article>{{post.text}}</article>
+    {% endif %}
+</section>
+{% if user.is_authenticated %}
+<form method="post" action="{% url 'comment' %}">
+{% csrf_token %}
+{{ form }}
+
+<input type="submit" value="comment">
+<input type="hidden" name="next" value="{{ next }}">
+</form>
+{% endif %}
+
+{% if comment_list %}
+<ul>
+    {% for comment in comment_list %}
+    <li id="{{comment.id}}">
+        <header>
+            <span><a href="/user?id={{comment.author.username}}">{{comment.author.username}}</a></span>
+            <span><a href="/item?id={{ comment.id }}">{{comment.created_at|timesince}} ago</a></span>
+        </header>
+        <article>{{comment.text}}</article>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

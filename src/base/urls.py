@@ -20,9 +20,13 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from member import views as member_views
+from post import views as post_views
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("", post_views.IndexView.as_view(), name="index"),
+    path("item/", post_views.PostView.as_view(), name="post"),
+    path("comment/", post_views.CommentView.as_view(), name="comment"),
+    path("submit/", post_views.SubmitView.as_view(), name="submit"),
     path("login/", member_views.LoginView.as_view(), name="login"),
     path("register/", member_views.RegisterView.as_view(), name="register"),
     path(
@@ -30,4 +34,5 @@ urlpatterns = [
         auth_views.PasswordResetView.as_view(),
         name="password_reset",
     ),
+    path("admin/", admin.site.urls),
 ]

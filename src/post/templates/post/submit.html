@@ -1,0 +1,9 @@
+{% block content %}
+<form action="{% url 'submit' %}" method="post">
+    {% csrf_token %}
+    {{ form }}
+
+    <input type="submit" value="new post">
+</form>
+<p>Leave url to submit a question for discussion. If there is no url, text will appear at the top of the thread. If there is url, text is optional.</p>
+{% endblock %}

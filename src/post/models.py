@@ -4,9 +4,9 @@ from django.db import models
 
 # Create your models here.
 class Post(models.Model):
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, default="", blank=True)
     url = models.URLField(max_length=255, default="", blank=True)
-    text = models.URLField(blank=True, default="")
+    text = models.TextField(blank=True, default="")
     author = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True)
     parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True)
     votes = models.IntegerField(default=0)

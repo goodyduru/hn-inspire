@@ -1,0 +1,25 @@
+{% block content %}
+<a href="{% url 'submit' %}">Submit</a>
+<div>
+    {% if latest_post_list %}
+    <ol>
+        {% for post in latest_post_list %}
+        <li>
+            {% if post.url != "" %}
+            <a href="{{ post.url }}">{{ post.title }}</a>
+            {% else %}
+            <a href="/item?id={{ post.id }}">{{post.title}}</a>
+            {% endif %}
+            <div>
+                <span>{{post.votes}} by </span>
+                <span><a href="/user?id={{post.author.username}}">{{post.author.username}}</a></span>
+                <span><a href="/item?id={{ post.id }}">{{post.created_at|timesince}} ago</a></span>
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+    {% else %}
+    <p> No post to show </p>
+    {% endif %}
+</div>
+{% endblock %}
