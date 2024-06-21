@@ -1,13 +1,15 @@
 from django.conf import settings
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth.views import RedirectURLMixin
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect, Http404, HttpResponseForbidden
 from django.shortcuts import render, resolve_url
+from django.utils.decorators import method_decorator
 from django.views import View
 
-from .forms import AddMemberForm
+from .forms import AddMemberForm, UpdateMemberForm
 
 
 # Create your views here.
@@ -83,6 +85,7 @@ class RegisterView(View, RedirectURLMixin):
 
 class ProfileView(View):
     template_name = "member/profile.html"
+    form = UpdateMemberForm
 
     def get(self, request, *args, **kwargs):
         username = request.GET.get("id")
@@ -94,4 +97,28 @@ class ProfileView(View):
             )
         except:
             raise Http404("No such user exists")
-        return render(request, self.template_name, {"member": member})
+        if username == request.user.username:
+            initial = {"email": member.email, "about": member.profile.about}
+            form = self.form(member=member, initial=initial)
+            return render(request, self.template_name, {"member": member, "form": form})
+        else:
+            return render(request, self.template_name, {"member": member})
+
+    @method_decorator(login_required())
+    def post(self, request, *args, **kwargs):
+        username = request.GET.get("id")
+        try:
+            member = (
+                get_user_model()
+                .objects.select_related("profile")
+                .get(username=username)
+            )
+        except:
+            raise Http404("No such user exists")
+        if username != request.user.username:
+            raise HttpResponseForbidden(content="You have no permission to do that")
+        initial = {"email": member.email, "about": member.profile.about}
+        form = self.form(member=member, initial=initial, data=request.POST)
+        if form.is_valid():
+            member = form.save()
+        return render(request, self.template_name, {"member": member, "form": form})
