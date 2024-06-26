@@ -132,3 +132,60 @@ class FavoritesView(View):
         )
         context = {"latest_post_list": submitted_posts}
         return render(request, template_name=self.template_name, context=context)
+
+
+class FavePostView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        id = request.GET.get("id")
+        action = request.GET.get("action")
+        error404 = Http404("Item does not exist")
+        if id is None or action not in [None, "un"]:
+            raise error404
+        try:
+            post = Post.objects.get(pk=int(id))
+        except:
+            raise error404
+        if action is None:
+            post.favoriters.add(request.user)
+        else:
+            post.favoriters.remove(request.user)
+        url = f"/item?id={id}"
+        return redirect(url)
+
+
+class VotePostView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        id = request.GET.get("id")
+        action = request.GET.get("action")
+        error404 = Http404("Item does not exist")
+        if id is None or action not in [None, "un"]:
+            raise error404
+        try:
+            post = Post.objects.get(pk=int(id))
+        except:
+            raise error404
+        if action is None:
+            post.voters.add(request.user)
+        else:
+            post.voters.remove(request.user)
+        url = f"/item?id={id}"
+        return redirect(url)
+
+
+class FlagPostView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        id = request.GET.get("id")
+        action = request.GET.get("action")
+        error404 = Http404("Item does not exist")
+        if id is None or action not in [None, "un"]:
+            raise error404
+        try:
+            post = Post.objects.get(pk=int(id))
+        except:
+            raise error404
+        if action is None:
+            post.flaggers.add(request.user)
+        else:
+            post.flaggers.remove(request.user)
+        url = f"/item?id={id}"
+        return redirect(url)

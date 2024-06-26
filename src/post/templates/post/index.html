@@ -8,6 +8,9 @@
     <ol>
         {% for post in latest_post_list %}
         <li>
+            {% if user.is_authenticated %}
+            <a href="/vote?id={{ post.id }}">^</a>
+            {% endif %}
             {% if post.url != "" %}
             <a href="{{ post.url }}">{{ post.title }}</a>
             {% else %}
