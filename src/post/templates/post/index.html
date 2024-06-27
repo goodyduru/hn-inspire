@@ -8,7 +8,7 @@
     <ol>
         {% for post in latest_post_list %}
         <li>
-            {% if user.is_authenticated %}
+            {% if user.is_authenticated and post.user_voted == None %}
             <a href="/vote?id={{ post.id }}">^</a>
             {% endif %}
             {% if post.url != "" %}
@@ -17,9 +17,28 @@
             <a href="/item?id={{ post.id }}">{{post.title}}</a>
             {% endif %}
             <div>
-                <span>{{post.votes}} by </span>
-                <span><a href="/user?id={{post.author.username}}">{{post.author.username}}</a></span>
-                <span><a href="/item?id={{ post.id }}">{{post.created_at|timesince}} ago</a></span>
+                <span>{{post.votes}} point{{ post.votes | pluralize }} by </span>
+                <span><a href="/user?id={{post.username}}">{{post.username}}</a></span>
+                <span><a href="/item?id={{ post.id }}">{{post.created_at|timesince}} ago</a></span> |
+                <span>
+                    {% if user.is_authenticated %}
+                        {% if post.user_flagged == None %}
+                        <a href="/flag?id={{ post.id }}">flag</a>
+                        {% else %}
+                        <a href="/flag?id={{ post.id }}&action=un">flag</a>
+                        {% endif %}
+                        |
+                    {% endif %} 
+                </span>
+                <span>
+                    <a href="/item?id={{ post.id }}">
+                        {% if post.comment_count == None %}
+                            discuss
+                        {% else %}
+                        {{post.comment_count}} comment{{ post.comment_count|pluralize }}
+                        {% endif %}
+                    </a>
+                </span>
             </div>
         </li>
         {% endfor %}

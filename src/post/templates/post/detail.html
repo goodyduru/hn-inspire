@@ -1,16 +1,39 @@
+{% load hnfilters %}
 {% block content %}
 <section>
-    {% if post.parent == None %}
+    {% if post.parent_id == None %}
     <header>
+        {% if user.is_authenticated and post.user_voted == None %}
+        <a href="/vote?id={{ post.id }}">^</a>
+        {% endif %}
         {% if post.url != "" %}
         <h2><a href="{{post.url}}">{{post.title}}</a></h2>
         {% else %}
         <h2>{{post.title}}</h2>
         {% endif %}
         <div>
-            <span>{{post.votes}} by </span>
-            <span><a href="/user?id={{post.author.username}}">{{post.author.username}}</a></span>
-            <span>{{post.created_at|timesince}} ago</span>
+            <span>{{post.votes}} point{{ post.votes | pluralize }} by </span>
+            <span><a href="/user?id={{post.username}}">{{post.username}}</a></span>
+            <span>{{post.created_at|timesince}} ago</span> |
+            <span>
+                {% if user.is_authenticated %}
+                    {% if post.user_flagged == None %}
+                    <a href="/flag?id={{ post.id }}">flag</a>
+                    {% else %}
+                    <a href="/flag?id={{ post.id }}&action=un">flag</a>
+                    {% endif %}
+                    |
+                {% endif %} 
+            </span>
+            <span>
+                <a href="/item?id={{ post.id }}">
+                    {% if comment_list %}
+                    {{comment_list|length}} comment{{ comment_list|length|pluralize }}
+                    {% else %}
+                        discuss
+                    {% endif %}
+                </a>
+            </span>
         </div>
     </header>
     {% if post.text != "" %}
@@ -19,10 +42,13 @@
     {% else %}
     <header>
         <div>
-            <span><a href="/user?id={{post.author.username}}">{{post.author.username}}</a></span>
+            {% if user.is_authenticated and post.user_voted == None %}
+            <a href="/vote?id={{ post.id }}">^</a>
+            {% endif %}
+            <span><a href="/user?id={{post.username}}">{{post.username}}</a></span>
             <span>{{post.created_at|timesince}} ago</span> |
-            <span><a href="/item?id={{post.parent.pk}}">parent</a></span> |
-            <span><a href="/item?id={{post.parent.pk}}#{{post.pk}}">context</a></span>
+            <span><a href="/item?id={{post.parent_id}}">parent</a></span> |
+            <span><a href="/item?id={{post.parent_id}}#{{post.id}}">context</a></span>
         </div>
     </header>
     <article>{{post.text}}</article>
@@ -41,10 +67,23 @@
 {% if comment_list %}
 <ul>
     {% for comment in comment_list %}
-    <li id="{{comment.id}}">
+    <li id="{{comment.id}}" style="{{comment.lev|indent}}">
         <header>
-            <span><a href="/user?id={{comment.author.username}}">{{comment.author.username}}</a></span>
+            {% if user.is_authenticated and post.user_voted == None %}
+            <a href="/vote?id={{ comment.id }}">^</a>
+            {% endif %}
+            <span><a href="/user?id={{comment.username}}">{{comment.username}}</a></span>
             <span><a href="/item?id={{ comment.id }}">{{comment.created_at|timesince}} ago</a></span>
+            <span>
+                {% if user.is_authenticated %}
+                    {% if post.user_flagged == None %}
+                    <a href="/flag?id={{ post.id }}">flag</a>
+                    {% else %}
+                    <a href="/flag?id={{ post.id }}&action=un">flag</a>
+                    {% endif %}
+                    |
+                {% endif %} 
+            </span>
         </header>
         <article>{{comment.text}}</article>
     </li>

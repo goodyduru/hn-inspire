@@ -6,6 +6,7 @@ from django.views import View
 
 from .forms import AddComment, AddPost
 from .models import Post
+from .sql import get_home_page, get_comments
 
 
 # Create your views here.
@@ -13,11 +14,7 @@ class IndexView(View):
     template_name = "post/index.html"
 
     def get(self, request, *args, **kwargs):
-        latest_posts = (
-            Post.objects.filter(parent=None)
-            .select_related("author")
-            .order_by("-updated_at")[:5]
-        )
+        latest_posts = get_home_page(request.user)
         context = {"latest_post_list": latest_posts}
         return render(request, template_name=self.template_name, context=context)
 
@@ -31,14 +28,12 @@ class PostView(View):
         error404 = Http404("Item does not exist")
         if post_id is None:
             raise error404
-        try:
-            post = Post.objects.select_related("author").get(pk=int(post_id))
-            comments = (
-                Post.objects.filter(parent=post).select_related().order_by("votes")
-            )
-            form = self.comment_form(author=request.user, initial={"parent": post.pk})
-        except:
+        posts = get_comments(request.user, int(post_id))
+        if len(posts) == 0:
             raise error404
+        post = posts[0]
+        comments = posts[1:]
+        form = self.comment_form(author=request.user, initial={"parent": post.id})
         return render(
             request,
             self.template_name,
