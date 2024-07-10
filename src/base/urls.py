@@ -24,6 +24,7 @@ from post import views as post_views
 
 urlpatterns = [
     path("", post_views.IndexView.as_view(), name="index"),
+    path("new/", post_views.NewPostView.as_view(), name="new"),
     path("item/", post_views.PostView.as_view(), name="post"),
     path("comment/", post_views.CommentView.as_view(), name="comment"),
     path("submit/", post_views.SubmitView.as_view(), name="submit"),
@@ -33,6 +34,7 @@ urlpatterns = [
     path("fave/", post_views.FavePostView.as_view()),
     path("vote/", post_views.VotePostView.as_view()),
     path("flag/", post_views.FlagPostView.as_view()),
+    path("reply/", post_views.ReplyView.as_view()),
     path("user/", member_views.ProfileView.as_view(), name="profile"),
     path("login/", member_views.LoginView.as_view(), name="login"),
     path("register/", member_views.RegisterView.as_view(), name="register"),
@@ -41,5 +43,6 @@ urlpatterns = [
         auth_views.PasswordResetView.as_view(),
         name="password_reset",
     ),
+    path("login/", auth_views.LogoutView.as_view(), name="logout"),
     path("admin/", admin.site.urls),
 ]

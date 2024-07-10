@@ -1,0 +1,25 @@
+{% block content %}
+<section>
+    <header>
+        <div>
+            {% if user.is_authenticated and post.user_voted == None %}
+            <a href="/vote?id={{ post.id }}">^</a>
+            {% endif %}
+            <span><a href="/user?id={{post.username}}">{{post.username}}</a></span>
+            <span>{{post.created_at|timesince}} ago</span> |
+            <span><a href="/item?id={{post.parent_id}}">parent</a></span> |
+            <span><a href="/item?id={{post.parent_id}}#{{post.id}}">context</a></span>
+        </div>
+    </header>
+    <article>{{post.text}}</article>
+</section>
+<section>
+    <form method="post" action="{% url 'comment' %}?goto={{goto}}">
+        {% csrf_token %}
+        {{ form }}
+        
+        <input type="submit" value="comment">
+        <input type="hidden" name="next" value="{{ next }}">
+    </form>
+</section>
+{% endblock %}

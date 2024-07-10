@@ -1,14 +1,17 @@
 {% block content %}
+<a href="{% url 'new' %}">New</a>
 <a href="{% url 'submit' %}">Submit</a>
 {% if not user.is_authenticated %}
 <a href="{% url 'login' %}">Login</a>
+{% else %}
+<a href="{% url 'logout' %}">Logout</a>
 {% endif %}
 <div>
     {% if latest_post_list %}
     <ol>
         {% for post in latest_post_list %}
         <li>
-            {% if user.is_authenticated and post.user_voted == None %}
+            {% if user.is_authenticated and post.username != user.username and post.user_voted == None %}
             <a href="/vote?id={{ post.id }}">^</a>
             {% endif %}
             {% if post.url != "" %}
@@ -21,7 +24,7 @@
                 <span><a href="/user?id={{post.username}}">{{post.username}}</a></span>
                 <span><a href="/item?id={{ post.id }}">{{post.created_at|timesince}} ago</a></span> |
                 <span>
-                    {% if user.is_authenticated %}
+                    {% if user.is_authenticated and post.username != user.username %}
                         {% if post.user_flagged == None %}
                         <a href="/flag?id={{ post.id }}">flag</a>
                         {% else %}

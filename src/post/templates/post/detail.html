@@ -20,7 +20,7 @@
                     {% if post.user_flagged == None %}
                     <a href="/flag?id={{ post.id }}">flag</a>
                     {% else %}
-                    <a href="/flag?id={{ post.id }}&action=un">flag</a>
+                    <a href="/flag?id={{ post.id }}&action=un">unflag</a>
                     {% endif %}
                     |
                 {% endif %} 
@@ -69,23 +69,24 @@
     {% for comment in comment_list %}
     <li id="{{comment.id}}" style="{{comment.lev|indent}}">
         <header>
-            {% if user.is_authenticated and post.user_voted == None %}
+            {% if user.is_authenticated and comment.user_voted == None and comment.username != user.username %}
             <a href="/vote?id={{ comment.id }}">^</a>
             {% endif %}
             <span><a href="/user?id={{comment.username}}">{{comment.username}}</a></span>
             <span><a href="/item?id={{ comment.id }}">{{comment.created_at|timesince}} ago</a></span>
             <span>
-                {% if user.is_authenticated %}
-                    {% if post.user_flagged == None %}
-                    <a href="/flag?id={{ post.id }}">flag</a>
+                {% if user.is_authenticated and comment.username != user.username %}
+                    {% if comment.user_flagged == None %}
+                    <a href="/flag?id={{ comment.id }}">flag</a>
                     {% else %}
-                    <a href="/flag?id={{ post.id }}&action=un">flag</a>
+                    <a href="/flag?id={{ comment.id }}&action=un">unflag</a>
                     {% endif %}
                     |
                 {% endif %} 
             </span>
         </header>
         <article>{{comment.text}}</article>
+        <footer><a href="/reply?id={{comment.id}}&goto={{post.id}}#{{comment.id}}">reply</a></footer>
     </li>
     {% endfor %}
 </ul>

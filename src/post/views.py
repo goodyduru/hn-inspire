@@ -6,7 +6,7 @@ from django.views import View
 
 from .forms import AddComment, AddPost
 from .models import Post
-from .sql import get_home_page, get_comments
+from .sql import get_home_page, get_comments, get_new_posts
 
 
 # Create your views here.
@@ -16,6 +16,15 @@ class IndexView(View):
     def get(self, request, *args, **kwargs):
         latest_posts = get_home_page(request.user)
         context = {"latest_post_list": latest_posts}
+        return render(request, template_name=self.template_name, context=context)
+
+
+class NewPostView(View):
+    template_name = "post/index.html"
+
+    def get(self, request, *args, **kwargs):
+        new_posts = get_new_posts(request.user)
+        context = {"latest_post_list": new_posts}
         return render(request, template_name=self.template_name, context=context)
 
 
@@ -52,10 +61,30 @@ class CommentView(LoginRequiredMixin, View):
         comment_form = self.comment_form(data=request.POST, author=request.user)
         if comment_form.is_valid():
             post = comment_form.save()
-            redirect_url = f"/item?id={post.parent.pk}#{post.pk}"
+            goto = request.GET.get("goto", f"{post.parent.pk}#{post.pk}")
+            redirect_url = f"/item?id={goto}"
             return redirect(redirect_url)
         else:
             return HttpResponseBadRequest(content="Form contains invalid data")
+
+
+class ReplyView(LoginRequiredMixin, View):
+    template_name = "post/reply.html"
+    comment_form = AddComment
+
+    def get(self, request, *args, **kwargs):
+        id = request.GET.get("id")
+        goto = request.GET.get("goto", "")
+        try:
+            post = Post.objects.prefetch_related("author").get(pk=int(id))
+        except:
+            raise Http404("Item does not exist")
+        if post.parent is None:
+            return HttpResponseBadRequest(content="Bad request")
+        form = self.comment_form(author=request.user, initial={"parent": post.id})
+        return render(
+            request, self.template_name, {"post": post, "goto": goto, "form": form}
+        )
 
 
 class SubmitView(LoginRequiredMixin, View):
@@ -137,13 +166,16 @@ class FavePostView(LoginRequiredMixin, View):
         if id is None or action not in [None, "un"]:
             raise error404
         try:
-            post = Post.objects.get(pk=int(id))
+            post = Post.objects.prefetch_related("author").get(pk=int(id))
         except:
             raise error404
+        user = request.user
+        if user.is_authenticated and post.author.username == user.username:
+            return HttpResponseBadRequest(content="Bad request")
         if action is None:
-            post.favoriters.add(request.user)
+            post.favoriters.add(user)
         else:
-            post.favoriters.remove(request.user)
+            post.favoriters.remove(user)
         url = f"/item?id={id}"
         return redirect(url)
 
@@ -159,10 +191,13 @@ class VotePostView(LoginRequiredMixin, View):
             post = Post.objects.get(pk=int(id))
         except:
             raise error404
+        user = request.user
+        if user.is_authenticated and post.author.username == user.username:
+            return HttpResponseBadRequest(content="Bad request")
         if action is None:
-            post.voters.add(request.user)
+            post.voters.add(user)
         else:
-            post.voters.remove(request.user)
+            post.voters.remove(user)
         url = f"/item?id={id}"
         return redirect(url)
 
@@ -178,9 +213,12 @@ class FlagPostView(LoginRequiredMixin, View):
             post = Post.objects.get(pk=int(id))
         except:
             raise error404
+        user = request.user
+        if user.is_authenticated and post.author.username == user.username:
+            return HttpResponseBadRequest(content="Bad request")
         if action is None:
-            post.flaggers.add(request.user)
+            post.flaggers.add(user)
         else:
-            post.flaggers.remove(request.user)
+            post.flaggers.remove(user)
         url = f"/item?id={id}"
         return redirect(url)

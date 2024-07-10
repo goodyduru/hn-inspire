@@ -21,7 +21,7 @@ class LoginView(View, RedirectURLMixin):
     def get(self, request, *args, **kwargs):
         login_form = self.login_form_class()
         register_form = self.register_form_class()
-        next = request.GET.get("next")
+        next = request.GET.get("next", "/")
         return render(
             request,
             self.template_name,

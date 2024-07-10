@@ -34,7 +34,7 @@ authenticated_home_page_query = """with recursive posts
     left join comments_count on posts.id = comments_count.ancestor 
     left join user_flags on posts.id = user_flags.post_id order by rank desc, created_at desc"""
 
-new_posts = """with recursive new_posts 
+authenticated_new_posts = """with recursive new_posts 
     AS (SELECT post_post.id, title, url, votes, created_at, username from post_post join auth_user on post_post.author_id = auth_user.id where parent_id is null order by created_at limit %s),
     comments 
         AS ( 
@@ -77,7 +77,7 @@ unauthenticated_home_page_query = """with recursive no_user_home
     from no_user_home 
     left join comments_count on no_user_home.id = comments_count.ancestor order by rank desc, created_at desc"""
 
-no_user_new = """with recursive no_user_new
+unauthenticated_new_posts = """with recursive no_user_new
     AS (SELECT post_post.id, title, url, votes, created_at, username from post_post join auth_user on post_post.author_id = auth_user.id where parent_id is null order by created_at limit %s),
     comments 
         AS ( 
@@ -183,5 +183,15 @@ def get_comments(user, post_id):
             )
         else:
             cursor.execute(unauthenticated_comments, [post_id, COMMENT_LIMITS])
+        results = namedtuplefetchall(cursor, "Post")
+    return results
+
+
+def get_new_posts(user):
+    with connection.cursor() as cursor:
+        if user.is_authenticated:
+            cursor.execute(authenticated_new_posts, [POST_LIMITS, user.id, user.id])
+        else:
+            cursor.execute(unauthenticated_new_posts, [POST_LIMITS])
         results = namedtuplefetchall(cursor, "Post")
     return results
