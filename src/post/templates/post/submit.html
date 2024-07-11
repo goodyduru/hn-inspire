@@ -1,3 +1,7 @@
+{% extends "post/base.html" %}
+{% block title %}
+New Post
+{% endblock %}
 {% block content %}
 <form action="{% url 'submit' %}" method="post">
     {% csrf_token %}

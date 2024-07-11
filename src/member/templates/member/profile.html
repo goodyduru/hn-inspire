@@ -1,3 +1,7 @@
+{% extends "post/base.html" %}
+{% block title %}
+{{member.username}} Profile
+{% endblock %}
 {% block content %}
     <p> <span>user: </span>{{ member.username }}</p>
     <p> <span>created: </span>{{ member.date_joined | date:"F j, Y" }}</p>

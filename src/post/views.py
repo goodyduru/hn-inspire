@@ -12,19 +12,31 @@ from .sql import get_home_page, get_comments, get_new_posts
 # Create your views here.
 class IndexView(View):
     template_name = "post/index.html"
+    title = "home"
+    header = "Home"
 
     def get(self, request, *args, **kwargs):
         latest_posts = get_home_page(request.user)
-        context = {"latest_post_list": latest_posts}
+        context = {
+            "latest_post_list": latest_posts,
+            "title": self.title,
+            "header": self.header,
+        }
         return render(request, template_name=self.template_name, context=context)
 
 
 class NewPostView(View):
     template_name = "post/index.html"
+    title = "new"
+    header = "New Posts"
 
     def get(self, request, *args, **kwargs):
         new_posts = get_new_posts(request.user)
-        context = {"latest_post_list": new_posts}
+        context = {
+            "latest_post_list": new_posts,
+            "title": self.title,
+            "header": self.header,
+        }
         return render(request, template_name=self.template_name, context=context)
 
 
@@ -76,7 +88,7 @@ class ReplyView(LoginRequiredMixin, View):
         id = request.GET.get("id")
         goto = request.GET.get("goto", "")
         try:
-            post = Post.objects.prefetch_related("author").get(pk=int(id))
+            post = Post.objects.select_related("author").get(pk=int(id))
         except:
             raise Http404("Item does not exist")
         if post.parent is None:
@@ -118,7 +130,7 @@ class SubmittedView(View):
             .select_related("author")
             .order_by("-updated_at")[:5]
         )
-        context = {"latest_post_list": submitted_posts}
+        context = {"latest_post_list": submitted_posts, "header": f"{username} Posts"}
         return render(request, template_name=self.template_name, context=context)
 
 
@@ -154,7 +166,10 @@ class FavoritesView(View):
             .select_related("author")
             .order_by("-updated_at")[:5]
         )
-        context = {"latest_post_list": submitted_posts}
+        context = {
+            "latest_post_list": submitted_posts,
+            "header": f"{username} Favorites",
+        }
         return render(request, template_name=self.template_name, context=context)
 
 
@@ -166,7 +181,7 @@ class FavePostView(LoginRequiredMixin, View):
         if id is None or action not in [None, "un"]:
             raise error404
         try:
-            post = Post.objects.prefetch_related("author").get(pk=int(id))
+            post = Post.objects.select_related("author").get(pk=int(id))
         except:
             raise error404
         user = request.user
@@ -188,16 +203,22 @@ class VotePostView(LoginRequiredMixin, View):
         if id is None or action not in [None, "un"]:
             raise error404
         try:
-            post = Post.objects.get(pk=int(id))
+            post = Post.objects.prefetch_related("voters").get(pk=int(id))
         except:
             raise error404
         user = request.user
         if user.is_authenticated and post.author.username == user.username:
             return HttpResponseBadRequest(content="Bad request")
-        if action is None:
+        count = post.voters.filter(id=user.pk).count()
+        if count == 0 and action is None:
             post.voters.add(user)
-        else:
+            post.votes += 1
+            post.save()
+        elif count == 1 and action == "un":
             post.voters.remove(user)
+            post.votes -= 1
+            post.save()
+
         url = f"/item?id={id}"
         return redirect(url)
 

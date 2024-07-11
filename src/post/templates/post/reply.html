@@ -1,3 +1,7 @@
+{% extends "post/base.html" %}
+{% block title %}
+Reply to {{post.text|truncatewords:30}}
+{% endblock %}
 {% block content %}
 <section>
     <header>

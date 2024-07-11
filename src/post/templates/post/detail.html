@@ -1,3 +1,11 @@
+{% extends "post/base.html" %}
+{% block title %}
+{% if post.url != "" %}
+{{post.title}}
+{% else %}
+{{ post.text|truncatewords:30 }}
+{% endif %}
+{% endblock %}
 {% load hnfilters %}
 {% block content %}
 <section>

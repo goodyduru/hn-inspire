@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model
@@ -83,6 +83,12 @@ class RegisterView(View, RedirectURLMixin):
         return resolve_url(settings.LOGIN_REDIRECT_URL)
 
 
+class LogoutView(View):
+    def get(self, request, *args, **kwargs):
+        logout(request)
+        return HttpResponseRedirect(resolve_url(settings.LOGOUT_REDIRECT_URL))
+
+
 class ProfileView(View):
     template_name = "member/profile.html"
     form = UpdateMemberForm
@@ -100,7 +106,11 @@ class ProfileView(View):
         if username == request.user.username:
             initial = {"email": member.email, "about": member.profile.about}
             form = self.form(member=member, initial=initial)
-            return render(request, self.template_name, {"member": member, "form": form})
+            return render(
+                request,
+                self.template_name,
+                {"member": member, "form": form, "title": username},
+            )
         else:
             return render(request, self.template_name, {"member": member})
 
@@ -121,4 +131,8 @@ class ProfileView(View):
         form = self.form(member=member, initial=initial, data=request.POST)
         if form.is_valid():
             member = form.save()
-        return render(request, self.template_name, {"member": member, "form": form})
+        return render(
+            request,
+            self.template_name,
+            {"member": member, "form": form, "title": username},
+        )

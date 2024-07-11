@@ -43,6 +43,6 @@ urlpatterns = [
         auth_views.PasswordResetView.as_view(),
         name="password_reset",
     ),
-    path("login/", auth_views.LogoutView.as_view(), name="logout"),
+    path("logout/", member_views.LogoutView.as_view(), name="logout"),
     path("admin/", admin.site.urls),
 ]

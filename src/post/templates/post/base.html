@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{% block title %}HN Inspire{% endblock %}</title>
+    </head>
+    <body>
+        <header>
+            <ul> 
+                <li>
+                    <a href="/">
+                        {% if title == 'home' %}
+                        <strong>Home</strong>
+                        {% else %}
+                        Home
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'new' %}">
+                        {% if title == 'new' %}
+                        <strong>New</strong>
+                        {% else %}
+                        New
+                        {% endif %}
+                    </a>
+                </li>
+                {% if user.is_authenticated %}
+                <li>
+                    <a href="{% url 'profile' %}?id={{user.username}}">
+                        {% if title == user.username %}
+                        <strong>{{user.username}}</strong>
+                        {% else %}
+                        {{user.username}}
+                        {% endif %}
+                    </a>
+                </li>
+                <li><a href="{% url 'logout' %}">Logout</a></li>
+                {% else %}
+                <li><a href="{% url 'login' %}">Login</a></li>
+                {% endif %}
+            </ul>
+        </header>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </body>
+</html>
