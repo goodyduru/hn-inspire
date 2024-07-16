@@ -12,7 +12,7 @@
     {% if post.parent_id == None %}
     <header>
         {% if user.is_authenticated and post.user_voted == None %}
-        <a href="/vote?id={{ post.id }}">^</a>
+        <a href="/vote?id={{ post.id }}">▲</a>
         {% endif %}
         {% if post.url != "" %}
         <h2><a href="{{post.url}}">{{post.title}}</a></h2>
@@ -51,7 +51,7 @@
     <header>
         <div>
             {% if user.is_authenticated and post.user_voted == None %}
-            <a href="/vote?id={{ post.id }}">^</a>
+            <a href="/vote?id={{ post.id }}">▲</a>
             {% endif %}
             <span><a href="/user?id={{post.username}}">{{post.username}}</a></span>
             <span>{{post.created_at|timesince}} ago</span> |
@@ -78,7 +78,7 @@
     <li id="{{comment.id}}" style="{{comment.lev|indent}}">
         <header>
             {% if user.is_authenticated and comment.user_voted == None and comment.username != user.username %}
-            <a href="/vote?id={{ comment.id }}">^</a>
+            <a href="/vote?id={{ comment.id }}">▲</a>
             {% endif %}
             <span><a href="/user?id={{comment.username}}">{{comment.username}}</a></span>
             <span><a href="/item?id={{ comment.id }}">{{comment.created_at|timesince}} ago</a></span>

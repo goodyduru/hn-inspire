@@ -9,7 +9,7 @@
         {% for post in latest_post_list %}
         <li>
             {% if user.is_authenticated and post.username != user.username and post.user_voted == None %}
-            <a href="/vote?id={{ post.id }}">^</a>
+            <a href="/vote?id={{ post.id }}">▲</a>
             {% endif %}
             {% if post.url != "" %}
             <a href="{{ post.url }}">{{ post.title }}</a>
