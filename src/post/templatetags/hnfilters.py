@@ -5,4 +5,6 @@ register = template.Library()
 
 @register.filter(name="indent")
 def indent(value):
-    return f"text-indent: {value}em"
+    if value > 1:
+        return f"margin-left: {value-1}em"
+    return ""

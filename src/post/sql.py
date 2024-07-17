@@ -159,7 +159,14 @@ unauthenticated_comments = """with recursive
 
 def namedtuplefetchall(cursor, name):
     desc = cursor.description
-    nt_result = namedtuple(name, [col[0] for col in desc])
+    extra = []
+    extra_default = []
+    if name == "Post":
+        extra = ["n", "html_classes"]
+        extra_default = ["", ""]
+    fields = [col[0] for col in desc]
+    defaults = [None] * len(fields)
+    nt_result = namedtuple(name, fields + extra, defaults=defaults + extra_default)
     return [nt_result(*row) for row in cursor.fetchall()]
 
 

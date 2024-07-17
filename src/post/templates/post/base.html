@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <link rel="stylesheet" href="{% static 'post/style.css' %}">
+        <link rel="stylesheet" href="{% static 'post/css/style.css' %}">
         <title>{% block title %}HN Inspire{% endblock %}</title>
     </head>
     <body>
@@ -45,5 +45,6 @@
         <main>
             {% block content %}{% endblock %}
         </main>
+        <script src="{% static 'post/js/script.js' %}"></script>
     </body>
 </html>

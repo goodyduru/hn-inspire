@@ -54,6 +54,7 @@ class PostView(View):
             raise error404
         post = posts[0]
         comments = posts[1:]
+        self.add_classes(comments)
         form = self.comment_form(author=request.user, initial={"parent": post.id})
         return render(
             request,
@@ -64,6 +65,34 @@ class PostView(View):
                 "form": form,
             },
         )
+
+    def add_classes(self, comments):
+        prev_level = 0
+        stack = []
+        comment_count = []
+        comment_indexes = []
+        for i in range(len(comments)):
+            comment = comments[i]
+            total = 0
+            if comment.lev <= prev_level:
+                while len(stack) >= comment.lev:
+                    stack.pop()
+                    j = comment_indexes.pop()
+                    total += comment_count.pop()
+                    comments[j] = comments[j]._replace(n=total)
+            if len(stack) > 0:
+                comment_count[-1] += total
+                comments[i] = comments[i]._replace(html_classes=" ".join(stack))
+            stack.append(str(comment.id))
+            comment_count.append(1)
+            comment_indexes.append(i)
+            prev_level = comment.lev
+        total = 0
+        while len(stack) > 0:
+            stack.pop()
+            j = comment_indexes.pop()
+            total += comment_count.pop()
+            comments[j] = comments[j]._replace(n=total)
 
 
 class CommentView(LoginRequiredMixin, View):

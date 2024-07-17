@@ -16,7 +16,7 @@
             {% else %}
             <a href="/item?id={{ post.id }}">{{post.title}}</a>
             {% endif %}
-            <div>
+            <div class="metadata">
                 <span>{{post.votes}} point{{ post.votes | pluralize }} by </span>
                 <span><a href="/user?id={{post.username}}">{{post.username}}</a></span>
                 <span><a href="/item?id={{ post.id }}">{{post.created_at|timesince}} ago</a></span> |

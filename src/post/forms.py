@@ -33,7 +33,9 @@ class AddPost(forms.Form):
 
 
 class AddComment(forms.Form):
-    text = forms.CharField(widget=forms.Textarea, label=_("Comment"))
+    text = forms.CharField(
+        widget=forms.Textarea(attrs={"cols": "80", "rows": "8"}), label=_("")
+    )
     parent = forms.CharField(widget=forms.HiddenInput)
 
     def __init__(self, author, *args, **kwargs):

@@ -359,7 +359,7 @@
     margin-top: 15px;
   }
 
-  ol li div {
+  .metadata {
     margin-left: 1rem;
     font-size: 0.8rem;
   }
@@ -369,4 +369,44 @@
     position: relative;
     bottom: 5px;
     font-size: 0.6rem;
+  }
+
+  textarea {
+    resize: both;
+  }
+
+  .detail {
+    padding-left: 40px;
+    margin-bottom: 20px;
+  }
+
+  .detail h2 {
+    display: inline-block;
+    margin-bottom: 5px;
+  }
+
+  .detail a[href*="vote"] {
+    bottom: 10px;
+  }
+
+  .detail-form {
+    margin-left: 55px;
+    margin-bottom: 50px;
+  }
+
+  .detail-form + ul .metadata {
+    margin-left: 0px;
+  }
+
+  .detail-form + ul a[href*="vote"] {
+    bottom: 2px;
+  }
+
+  .detail-form + ul footer {
+    font-size: 0.8rem;
+  }
+
+  .detail-form + ul article, .detail-form + ul footer {
+    margin-top: 5px;
+    margin-left: 13px;
   }

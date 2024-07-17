@@ -3,7 +3,7 @@
 Reply to {{post.text|truncatewords:30}}
 {% endblock %}
 {% block content %}
-<section>
+<section class="detail">
     <header>
         <div>
             {% if user.is_authenticated and post.user_voted == None %}
