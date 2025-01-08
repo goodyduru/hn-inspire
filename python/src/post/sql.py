@@ -4,6 +4,11 @@ from django.db import connection
 POST_LIMITS = 30
 COMMENT_LIMITS = 200
 
+
+# This query gets the list of current best posts(max 30) and their metadata. It works like this:
+# It ranks each post by the known HN ranking algorithm.
+# It retrieves each post's comments and nested comments count.
+# It identifies if the currently logged in user has voted or flagged the post.
 authenticated_home_page_query = """with recursive posts 
     AS (SELECT post_post.id, title, url, votes, created_at, username, 
     (votes - 1)/pow(((extract(epoch from (now() - created_at))/3600) + 2), 1.5) as rank 
@@ -34,6 +39,7 @@ authenticated_home_page_query = """with recursive posts
     left join comments_count on posts.id = comments_count.ancestor 
     left join user_flags on posts.id = user_flags.post_id order by rank desc, created_at desc"""
 
+# This retrieves the latest posts (max 30). It works like the previous query except for the ranking.
 authenticated_new_posts = """with recursive new_posts 
     AS (SELECT post_post.id, title, url, votes, created_at, username from post_post join auth_user on post_post.author_id = auth_user.id where parent_id is null order by created_at limit %s),
     comments 
@@ -60,6 +66,7 @@ authenticated_new_posts = """with recursive new_posts
     left join comments_count on new_posts.id = comments_count.ancestor 
     left join user_flags on new_posts.id = user_flags.post_id order by created_at desc"""
 
+# This gets all the current best posts (max 30). It works like the first query except for the absence of votes and flags retrieval
 unauthenticated_home_page_query = """with recursive no_user_home 
     AS (SELECT post_post.id, title, url, votes, created_at, username, (votes - 1)/pow(((extract(epoch from (now() - created_at))/3600) + 2), 1.5) as rank from post_post join auth_user on post_post.author_id = auth_user.id where parent_id is null order by rank desc limit %s),
     comments 
@@ -77,6 +84,7 @@ unauthenticated_home_page_query = """with recursive no_user_home
     from no_user_home 
     left join comments_count on no_user_home.id = comments_count.ancestor order by rank desc, created_at desc"""
 
+# This gets all the latest posts (max 30). It works like the authenticated_new_posts query except for the absence of votes and flags retrieval.
 unauthenticated_new_posts = """with recursive no_user_new
     AS (SELECT post_post.id, title, url, votes, created_at, username from post_post join auth_user on post_post.author_id = auth_user.id where parent_id is null order by created_at limit %s),
     comments 
@@ -93,6 +101,9 @@ unauthenticated_new_posts = """with recursive no_user_new
     from no_user_new 
     left join comments_count on no_user_new.id = comments_count.ancestor order by created_at desc"""
 
+# Get the a post's comments including nested comments and currently logged in user interactions with the comments.
+# It ranks each comments using a sorting key. Each sorting key is a concatenation of all the comment's ancestors' sorting
+# key and its votes and age.
 authenticated_comments = """with recursive 
     comments_raw 
         AS ( 
@@ -130,6 +141,7 @@ authenticated_comments = """with recursive
         left join user_flags on comments.id = user_flags.post_id 
         order by skey"""
 
+# Works like the previous query except for the user interaction.
 unauthenticated_comments = """with recursive 
     comments_raw 
         AS ( 

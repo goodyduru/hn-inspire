@@ -67,27 +67,39 @@ class PostView(View):
         )
 
     def add_classes(self, comments):
+        """This function manipulates comments attributes using several stacks.
+        We want to know the number of replies a particular comment has and set its html
+        class to its ancestors ids.
+        """
         prev_level = 0
-        stack = []
-        comment_count = []
-        comment_indexes = []
+        stack = []  # Holds comments' ids as string
+        comment_count = []  # Holds the number of replies a comment + 1
+        comment_indexes = (
+            []
+        )  # Holds comments' index in the array. We use this to change its children population later.
         for i in range(len(comments)):
             comment = comments[i]
             total = 0
             if comment.lev <= prev_level:
+                """Close the previous levels of replies and aggregate the total replies
+                each removed comment in the stack has
+                """
                 while len(stack) >= comment.lev:
                     stack.pop()
                     j = comment_indexes.pop()
                     total += comment_count.pop()
                     comments[j] = comments[j]._replace(n=total)
             if len(stack) > 0:
+                # Update the number of replies the last of the remaining comments in the stack has
                 comment_count[-1] += total
+                # Set the HTML class of the current comment to all its ancestors' ids.
                 comments[i] = comments[i]._replace(html_classes=" ".join(stack))
             stack.append(str(comment.id))
             comment_count.append(1)
             comment_indexes.append(i)
             prev_level = comment.lev
         total = 0
+        # Aggregate total replies of each remaining comments in the stack
         while len(stack) > 0:
             stack.pop()
             j = comment_indexes.pop()
