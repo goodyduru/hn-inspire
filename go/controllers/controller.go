@@ -3,6 +3,8 @@ package controllers
 import (
 	"html/template"
 	"net/http"
+
+	"github.com/goodyduru/go-news/models"
 )
 
 var templates map[string]*template.Template
@@ -18,10 +20,19 @@ func Setup() *http.ServeMux {
 	mux.HandleFunc("POST /register", register)
 	mux.HandleFunc("GET /login", loginForm)
 	mux.HandleFunc("POST /login", login)
+
+	// home
+	mux.HandleFunc("GET /", home)
 	return mux
 }
 
 func renderTemplate(w http.ResponseWriter, templateName string, data any) error {
 	err := templates[templateName].Execute(w, data)
 	return err
+}
+
+func home(w http.ResponseWriter, r *http.Request) {
+	sess := models.StartSession(w, r)
+	user := sess.Get("user")
+	renderTemplate(w, "index", user)
 }

@@ -50,7 +50,9 @@ func register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderTemplate(w, "index", user)
+	sess := models.StartSession(w, r)
+	sess.Set("user", user)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +94,9 @@ func login(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	renderTemplate(w, "index", user)
+	sess := models.StartSession(w, r)
+	sess.Set("user", user)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // From Django username validator

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/goodyduru/go-news/controllers"
+	_ "github.com/goodyduru/go-news/memory"
 	"github.com/goodyduru/go-news/models"
 	"github.com/joho/godotenv"
 )
