@@ -1,0 +1,10 @@
+{{define "title"}}Welcome {{.Username}}{{end}}
+{{define "body"}}
+<h1> Welcome {{.Username}} </h1>
+<p>Here are your details</p>
+<ul>
+    <li>ID: {{.ID}}</li>
+    <li>Is Admin: {{.IsAdmin}}</li>
+    <li>Joined: {{.Joined}}</li>
+</ul>
+{{end}}

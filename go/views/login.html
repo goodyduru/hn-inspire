@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <meta name="description" content="HN-like Login">
+        <title>Login/Register</title>
+    </head>
+    <body>
+        <main>
+            <section>
+                {{- range .}}
+                {{.}}
+                {{- end}}
+                <h2>Login</h2>
+                <form method="post" action="/login">
+                    <fieldset>
+                        <label for="login-username">Username:</label>
+                        <input id="login-username" type="text" name="username" required>
+                    </fieldset>
+                    <fieldset>
+                        <label for="login-password">Password</label>
+                        <input id="login-password" type="password" name="password" required>
+                    </fieldset>
+                    <div>
+                        <button type="submit">Login</button>
+                    </div>
+                </form>
+            </section>
+            <section>
+                <h2>Register</h2>
+                <form action="/register" method="post">
+                    <fieldset>
+                        <label for="username">Username:</label>
+                        <input id="username" type="text" name="username" required>
+                    </fieldset>
+                    <fieldset>
+                        <label for="password">Password:</label>
+                        <input id="password" type="password" name="password" required>
+                    </fieldset>
+                    <div>
+                        <button type="submit">Register</button>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </body>
+</html>
