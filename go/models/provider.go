@@ -1,11 +1,11 @@
-package memory
+package models
 
 import (
 	"container/list"
 	"sync"
 	"time"
 
-	"github.com/goodyduru/go-news/models"
+	"github.com/goodyduru/go-news/sessions"
 )
 
 var pder = &Provider{list: list.New()}
@@ -46,7 +46,7 @@ type Provider struct {
 	list     *list.List
 }
 
-func (pder *Provider) SessionInit(sid string) (models.Session, error) {
+func (pder *Provider) SessionInit(sid string) (sessions.Session, error) {
 	pder.lock.Lock()
 	defer pder.lock.Unlock()
 	v := make(map[interface{}]interface{}, 0)
@@ -56,7 +56,7 @@ func (pder *Provider) SessionInit(sid string) (models.Session, error) {
 	return newsess, nil
 }
 
-func (pder *Provider) SessionRead(sid string) (models.Session, error) {
+func (pder *Provider) SessionRead(sid string) (sessions.Session, error) {
 	if element, ok := pder.sessions[sid]; ok {
 		return element.Value.(*SessionStore), nil
 	}
@@ -99,9 +99,4 @@ func (pder *Provider) SessionUpdate(sid string) error {
 		return nil
 	}
 	return nil
-}
-
-func init() {
-	pder.sessions = make(map[string]*list.Element, 0)
-	models.Register("memory", pder)
 }

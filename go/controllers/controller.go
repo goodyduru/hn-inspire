@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/goodyduru/go-news/models"
+	"github.com/goodyduru/go-news/sessions"
 )
 
 var templates map[string]*template.Template
@@ -32,7 +32,7 @@ func renderTemplate(w http.ResponseWriter, templateName string, data any) error 
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	sess := models.StartSession(w, r)
+	sess := sessions.StartSession(w, r)
 	user := sess.Get("user")
 	renderTemplate(w, "index", user)
 }

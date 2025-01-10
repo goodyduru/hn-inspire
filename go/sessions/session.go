@@ -1,4 +1,4 @@
-package models
+package sessions
 
 import (
 	"crypto/rand"
@@ -33,6 +33,7 @@ type Session interface {
 }
 
 var provides = make(map[string]Provider)
+var globalSessions *Manager
 
 func NewManager(provideName, cookieName string, maxlifetime int64) (*Manager, error) {
 	provider, ok := provides[provideName]
@@ -95,4 +96,13 @@ func (manager *Manager) GC() {
 	defer manager.lock.Unlock()
 	manager.provider.SessionGC(manager.maxlifetime)
 	time.AfterFunc(time.Duration(manager.maxlifetime), manager.GC)
+}
+
+func Init() {
+	globalSessions, _ = NewManager("memory", "hnsessionid", 3600)
+	go globalSessions.GC()
+}
+
+func StartSession(w http.ResponseWriter, r *http.Request) Session {
+	return globalSessions.SessionStart(w, r)
 }

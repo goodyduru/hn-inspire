@@ -5,7 +5,8 @@ import (
 	"net/http"
 
 	"github.com/goodyduru/go-news/controllers"
-	_ "github.com/goodyduru/go-news/memory"
+	"github.com/goodyduru/go-news/sessions"
+
 	"github.com/goodyduru/go-news/models"
 	"github.com/joho/godotenv"
 )
@@ -13,6 +14,7 @@ import (
 func main() {
 	godotenv.Load()
 	models.Init()
+	sessions.Init()
 	mux := controllers.Setup()
 	log.Fatal(http.ListenAndServe(":8090", mux))
 }

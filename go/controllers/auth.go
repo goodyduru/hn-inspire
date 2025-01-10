@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/goodyduru/go-news/models"
+	"github.com/goodyduru/go-news/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -50,7 +51,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sess := models.StartSession(w, r)
+	sess := sessions.StartSession(w, r)
 	sess.Set("user", user)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
@@ -94,7 +95,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	sess := models.StartSession(w, r)
+	sess := sessions.StartSession(w, r)
 	sess.Set("user", user)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
