@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -12,20 +13,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type authData struct {
-	pageData loginPage
-	token    string
-	sess     sessions.Session
-}
-
 type loginPage struct {
 	Errors   []string
 	Login    string
 	Register string
 }
 
-func loginForm(w http.ResponseWriter, r *http.Request) {
-	sess := sessions.StartSession(w, r)
+func loginForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	l := loginPage{
 		Login:    generateToken(),
 		Register: generateToken(),
@@ -37,52 +32,60 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func authHandler(fn func(http.ResponseWriter, *http.Request, *authData)) http.HandlerFunc {
+func authHandler(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		authData := &authData{sess: sessions.StartSession(w, r)}
-		registerToken := authData.sess.Get("register_token")
-		loginToken := authData.sess.Get("login_token")
+		sess := sessions.StartSession(w, r)
+		registerToken := sess.Get("register_token")
+		loginToken := sess.Get("login_token")
 		if registerToken == nil || loginToken == nil {
 			http.Error(w, "Invalid submission", http.StatusForbidden)
 			return
 		}
+		var token string
 		if strings.Contains(r.URL.Path, "login") {
-			authData.token = loginToken.(string)
+			token = loginToken.(string)
 		} else {
-			authData.token = registerToken.(string)
+			token = registerToken.(string)
 		}
-		authData.pageData = loginPage{
+		pageData := loginPage{
 			Login:    generateToken(),
 			Register: generateToken(),
 		}
-		authData.sess.Set("login_token", authData.pageData.Login)
-		authData.sess.Set("register_token", authData.pageData.Register)
-		fn(w, r, authData)
+		sess.Set("login_token", pageData.Login)
+		sess.Set("register_token", pageData.Register)
+		ctx := context.Background()
+		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
+		ctx = context.WithValue(ctx, hnContextKey("token"), token)
+		ctx = context.WithValue(ctx, hnContextKey("page_data"), &pageData)
+		fn(ctx, w, r)
 	}
 }
 
-func register(w http.ResponseWriter, r *http.Request, a *authData) {
+func register(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 	registerToken := r.PostFormValue("register-token")
 	registerErrors := make([]string, 0)
 	isValid := validateUsername(username)
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+	token := ctx.Value(hnContextKey("token")).(string)
+	pageData := ctx.Value(hnContextKey("page_data")).(*loginPage)
 	if !isValid {
 		registerErrors = append(registerErrors, "Enter a valid username. This value may contain only letters, numbers, and @/./+/-/_ characters.")
 	}
 	if password == "" {
 		registerErrors = append(registerErrors, "Empty passwords are not allowed")
 	}
-	if registerToken != a.token {
+	if registerToken != token {
 		registerErrors = append(registerErrors, "Invalid token")
 	}
 	if len(registerErrors) > 0 {
-		a.pageData.Errors = registerErrors
-		err := renderTemplate(w, "login", a.pageData)
+		pageData.Errors = registerErrors
+		err := renderTemplate(w, "login", pageData)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -95,33 +98,36 @@ func register(w http.ResponseWriter, r *http.Request, a *authData) {
 	}
 	if err := user.Create(); err != nil {
 		if errors.Is(err, models.ErrNotUnique) {
-			a.pageData.Errors = append(a.pageData.Errors, err.Error())
-			renderTemplate(w, "login", a.pageData)
+			pageData.Errors = append(pageData.Errors, err.Error())
+			renderTemplate(w, "login", pageData)
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
-	a.sess.Set("user", user)
-	a.sess.Delete("register_token")
-	a.sess.Delete("login_token")
+	sess.Set("user", user)
+	sess.Delete("register_token")
+	sess.Delete("login_token")
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func login(w http.ResponseWriter, r *http.Request, a *authData) {
+func login(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 	loginToken := r.PostFormValue("login-token")
 	loginErrors := make([]string, 0)
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+	token := ctx.Value(hnContextKey("token")).(string)
+	pageData := ctx.Value(hnContextKey("page_data")).(*loginPage)
 	if username == "" || password == "" {
 		loginErrors = append(loginErrors, "Empty username or password not allowed")
 	}
-	if loginToken != a.token {
+	if loginToken != token {
 		loginErrors = append(loginErrors, "Invalid token")
 	}
 	if len(loginErrors) > 0 {
-		a.pageData.Errors = loginErrors
-		err := renderTemplate(w, "login", a.pageData)
+		pageData.Errors = loginErrors
+		err := renderTemplate(w, "login", pageData)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -142,17 +148,16 @@ func login(w http.ResponseWriter, r *http.Request, a *authData) {
 		if len(loginErrors) == 0 {
 			loginErrors = append(loginErrors, errMessage)
 		}
-		a.pageData.Errors = loginErrors
-		err := renderTemplate(w, "login", a.pageData)
+		pageData.Errors = loginErrors
+		err := renderTemplate(w, "login", pageData)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
-	sess := sessions.StartSession(w, r)
 	sess.Set("user", user)
-	a.sess.Delete("register_token")
-	a.sess.Delete("login_token")
+	sess.Delete("register_token")
+	sess.Delete("login_token")
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 

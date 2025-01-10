@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 	"html/template"
@@ -15,6 +16,8 @@ import (
 
 var templates map[string]*template.Template
 
+type hnContextKey string
+
 func Setup() *http.ServeMux {
 	templates = make(map[string]*template.Template)
 	templates["login"] = template.Must(template.ParseFiles("views/login.html"))
@@ -22,13 +25,13 @@ func Setup() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// auth
-	mux.HandleFunc("GET /register", loginForm)
+	mux.HandleFunc("GET /register", defaultHandler(loginForm))
 	mux.HandleFunc("POST /register", authHandler(register))
-	mux.HandleFunc("GET /login", loginForm)
+	mux.HandleFunc("GET /login", defaultHandler(loginForm))
 	mux.HandleFunc("POST /login", authHandler(login))
 
 	// home
-	mux.HandleFunc("GET /", home)
+	mux.HandleFunc("GET /", defaultHandler(home))
 	return mux
 }
 
@@ -37,8 +40,8 @@ func renderTemplate(w http.ResponseWriter, templateName string, data any) error 
 	return err
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
-	sess := sessions.StartSession(w, r)
+func home(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	user := sess.Get("user")
 	if user != nil {
 		user = user.(*models.User)
@@ -52,4 +55,13 @@ func generateToken() string {
 	io.WriteString(h, "examplexxxx....")
 	token := fmt.Sprintf("%x", h.Sum(nil))
 	return token
+}
+
+func defaultHandler(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.Background()
+		sess := sessions.StartSession(w, r)
+		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
+		fn(ctx, w, r)
+	}
 }
