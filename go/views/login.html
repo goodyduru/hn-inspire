@@ -9,11 +9,12 @@
     <body>
         <main>
             <section>
-                {{- range .}}
+                {{- range .Errors}}
                 {{.}}
                 {{- end}}
                 <h2>Login</h2>
                 <form method="post" action="/login">
+                    <input name="login-token" type="hidden" value="{{.Login}}">
                     <fieldset>
                         <label for="login-username">Username:</label>
                         <input id="login-username" type="text" name="username" required>
@@ -30,6 +31,7 @@
             <section>
                 <h2>Register</h2>
                 <form action="/register" method="post">
+                    <input name="register-token" type="hidden" value="{{.Register}}">
                     <fieldset>
                         <label for="username">Username:</label>
                         <input id="username" type="text" name="username" required>

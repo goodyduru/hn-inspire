@@ -1,9 +1,15 @@
 package controllers
 
 import (
+	"crypto/md5"
+	"fmt"
 	"html/template"
+	"io"
 	"net/http"
+	"strconv"
+	"time"
 
+	"github.com/goodyduru/go-news/models"
 	"github.com/goodyduru/go-news/sessions"
 )
 
@@ -17,9 +23,9 @@ func Setup() *http.ServeMux {
 
 	// auth
 	mux.HandleFunc("GET /register", loginForm)
-	mux.HandleFunc("POST /register", register)
+	mux.HandleFunc("POST /register", authHandler(register))
 	mux.HandleFunc("GET /login", loginForm)
-	mux.HandleFunc("POST /login", login)
+	mux.HandleFunc("POST /login", authHandler(login))
 
 	// home
 	mux.HandleFunc("GET /", home)
@@ -34,5 +40,16 @@ func renderTemplate(w http.ResponseWriter, templateName string, data any) error 
 func home(w http.ResponseWriter, r *http.Request) {
 	sess := sessions.StartSession(w, r)
 	user := sess.Get("user")
+	if user != nil {
+		user = user.(*models.User)
+	}
 	renderTemplate(w, "index", user)
+}
+
+func generateToken() string {
+	h := md5.New()
+	io.WriteString(h, strconv.FormatInt(time.Now().UnixNano(), 10))
+	io.WriteString(h, "examplexxxx....")
+	token := fmt.Sprintf("%x", h.Sum(nil))
+	return token
 }
