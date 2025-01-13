@@ -1,10 +1,43 @@
 {{define "title"}}Welcome {{ if .User }} {{.User.Username}} {{ end }}{{end}}
 {{define "body"}}
-<h1> Welcome {{.User.Username}} </h1>
-<p>Here are your details</p>
-<ul>
-    <li>ID: {{.User.ID}}</li>
-    <li>Is Admin: {{.User.IsAdmin}}</li>
-    <li>Joined: {{.User.Joined}}</li>
-</ul>
+<div>
+    <ol>
+        {{ range .Posts }}
+        <li>
+            {{ if and $.User (ne .AuthorID $.User.ID) (gt .VotedID 0) }}
+            <a href="/vote?id={{.ID}}">▲</a>
+            {{ end }}
+            {{ if ne .Url "" }}
+            <a href="{{.Url}}">{{.Title}}</a>
+            {{ else }}
+            <a href="/item?id={{.ID}}">{{.Title}}</a>
+            {{end}}
+            <div>
+                <span>{{.Votes}} point{{pluralize .Votes}} by</span>
+                <span><a href="/user?id={{.Author}}">{{.Author}}</a></span>
+                <span><a href="/item?id={{.ID}}"> {{timesince .CreatedAt}} ago</a></span> |
+                {{ if and $.User (ne .AuthorID $.User.ID) }}
+                    <span>
+                            {{ if (gt .FlaggedID 0) }}
+                            <a href="/flag?id={{.ID}}&action=un">unflag</a>
+                            {{ else }}
+                            <a href="/flag?id={{.ID}}">flag</a>
+                            {{end}}
+                            |
+                    </span>
+                {{end}}
+                <span>
+                    <a href="/item?id={{.ID}}">
+                        {{ if (eq .NumReplies 0) }}
+                            discuss
+                        {{ else }}
+                            {{.NumReplies}} comment {{pluralize .NumReplies}}
+                        {{end}}
+                    </a>
+                </span>
+            </div>
+        </li>
+        {{ end }}
+    </ol>
+</div>
 {{end}}

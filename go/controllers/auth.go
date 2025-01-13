@@ -27,7 +27,7 @@ func loginForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 	sess.Set("login_token", l.Login)
 	sess.Set("register_token", l.Register)
-	if err := renderTemplate(w, "login", l); err != nil {
+	if err := renderTemplate(w, "login", "login.html", l); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -85,7 +85,7 @@ func register(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 	if len(registerErrors) > 0 {
 		pageData.Errors = registerErrors
-		err := renderTemplate(w, "login", pageData)
+		err := renderTemplate(w, "login", "login.html", pageData)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -99,7 +99,7 @@ func register(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if err := user.Create(); err != nil {
 		if errors.Is(err, models.ErrNotUnique) {
 			pageData.Errors = append(pageData.Errors, err.Error())
-			renderTemplate(w, "login", pageData)
+			renderTemplate(w, "login", "login.html", pageData)
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -127,7 +127,7 @@ func login(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 	if len(loginErrors) > 0 {
 		pageData.Errors = loginErrors
-		err := renderTemplate(w, "login", pageData)
+		err := renderTemplate(w, "login", "login.html", pageData)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -149,7 +149,7 @@ func login(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 			loginErrors = append(loginErrors, errMessage)
 		}
 		pageData.Errors = loginErrors
-		err := renderTemplate(w, "login", pageData)
+		err := renderTemplate(w, "login", "login.html", pageData)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

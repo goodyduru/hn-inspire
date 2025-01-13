@@ -29,10 +29,48 @@ type form struct {
 	Token string
 }
 
+func pluralize(count int) string {
+	if count > 1 {
+		return "s"
+	}
+	return ""
+}
+
 func Setup() *http.ServeMux {
+	funcMap := template.FuncMap{
+		"pluralize": pluralize,
+		"timesince": func(saveTime time.Time) string {
+			duration := time.Since(saveTime)
+			var formattedTime string
+			if duration.Seconds() < 60 {
+				s := int(duration.Seconds())
+				formattedTime = fmt.Sprintf("%d second%s", s, pluralize(s))
+			} else if duration.Minutes() < 60 {
+				m := int(duration.Minutes())
+				formattedTime = fmt.Sprintf("%d minute%s", m, pluralize(m))
+			} else if duration.Hours() < 24 {
+				h := int(duration.Hours())
+				formattedTime = fmt.Sprintf("%d hour%s", h, pluralize(h))
+			}
+			if formattedTime != "" {
+				return formattedTime
+			}
+			days := int(duration.Hours()) / 24
+			if days > 365 {
+				formattedTime = fmt.Sprintf("%d year%s", days/365, pluralize(days/365))
+			} else if days > 31 {
+				formattedTime = fmt.Sprintf("%d month%s", days/31, pluralize(days/31))
+			} else if days > 7 {
+				formattedTime = fmt.Sprintf("%d week%s", days/7, pluralize(days/7))
+			} else {
+				formattedTime = fmt.Sprintf("%d day%s", days, pluralize(days))
+			}
+			return formattedTime
+		},
+	}
 	templates = make(map[string]*template.Template)
 	templates["login"] = template.Must(template.ParseFiles("views/login.html"))
-	templates["index"] = template.Must(template.ParseFiles("views/base.html", "views/index.html"))
+	templates["index"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/index.html"))
 	templates["submit"] = template.Must(template.ParseFiles("views/base.html", "views/submit.html"))
 	mux := http.NewServeMux()
 
@@ -48,23 +86,13 @@ func Setup() *http.ServeMux {
 	mux.HandleFunc("POST /submit", loginRequired(submit))
 
 	// home
-	mux.HandleFunc("GET /", defaultHandler(home))
+	mux.HandleFunc("GET /", defaultHandler(all))
 	return mux
 }
 
-func renderTemplate(w http.ResponseWriter, templateName string, data any) error {
-	err := templates[templateName].Execute(w, data)
+func renderTemplate(w http.ResponseWriter, pageName, templateName string, data any) error {
+	err := templates[pageName].ExecuteTemplate(w, templateName, data)
 	return err
-}
-
-func home(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
-	user := sess.Get("user")
-	p := &pageData{}
-	if user != nil {
-		p.User = user.(*models.User)
-	}
-	renderTemplate(w, "index", p)
 }
 
 func generateToken() string {

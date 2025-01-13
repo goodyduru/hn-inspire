@@ -16,7 +16,7 @@ func submitForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	f := form{Token: generateToken()}
 	sess.Set("token", f.Token)
 	p.Form = f
-	if err := renderTemplate(w, "submit", &p); err != nil {
+	if err := renderTemplate(w, "submit", "base.html", &p); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -54,7 +54,7 @@ func submit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 	if len(formErrors) > 0 {
 		p.Errors = formErrors
-		if err := renderTemplate(w, "submit", &p); err != nil {
+		if err := renderTemplate(w, "submit", "base.html", &p); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
@@ -69,7 +69,7 @@ func submit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if err := post.Create(); err != nil {
 		formErrors = append(formErrors, err.Error())
 		p.Errors = formErrors
-		if err := renderTemplate(w, "submit", &p); err != nil {
+		if err := renderTemplate(w, "submit", "base.html", &p); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
@@ -77,4 +77,24 @@ func submit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	sess.Delete("token")
 
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func all(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+	user := sess.Get("user")
+	p := &pageData{}
+	var posts []models.Post
+	var err error
+	if user != nil {
+		p.User = user.(*models.User)
+		posts, err = models.GetAuthRanked(p.User.ID)
+	} else {
+		posts, err = models.GetAuthRanked(8)
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	p.Posts = posts
+	renderTemplate(w, "index", "base.html", p)
 }
