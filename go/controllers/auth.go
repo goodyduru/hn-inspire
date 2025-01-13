@@ -38,7 +38,7 @@ func authHandler(fn func(context.Context, http.ResponseWriter, *http.Request)) h
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		sess := sessions.StartSession(w, r)
+		sess := sessions.GlobalSessions.SessionStart(w, r)
 		registerToken := sess.Get("register_token")
 		loginToken := sess.Get("login_token")
 		if registerToken == nil || loginToken == nil {
@@ -57,7 +57,7 @@ func authHandler(fn func(context.Context, http.ResponseWriter, *http.Request)) h
 		}
 		sess.Set("login_token", pageData.Login)
 		sess.Set("register_token", pageData.Register)
-		ctx := context.Background()
+		ctx := r.Context()
 		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
 		ctx = context.WithValue(ctx, hnContextKey("token"), token)
 		ctx = context.WithValue(ctx, hnContextKey("page_data"), &pageData)
@@ -169,4 +169,13 @@ func validateUsername(username string) bool {
 
 func verify(password, hash string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+}
+
+func logout(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+	user := sess.Get("user")
+	if user != nil {
+		sessions.GlobalSessions.SessionDestroy(w, r)
+	}
+	http.Redirect(w, r, "/", http.StatusFound)
 }

@@ -7,6 +7,21 @@
         <title>{{template "title" .}}</title>
     </head>
     <body>
-        {{template "body" .}}
+        <header>
+            <nav>
+                <a href="/">Home</a>
+
+                {{if .User}}
+                <a href="/submit">Submit</a>
+                <a href="/user?id={{.User.Username}}">{{.User.Username}}</a>
+                <a href="/logout">Logout</a>
+                {{else}}
+                <a href="/login">Login</a>
+                {{end}}
+            </nav>
+        </header>
+        <main>
+            {{template "body" .}}
+        </main>
     </body>
 </html>

@@ -10,7 +10,7 @@
         <main>
             <section>
                 {{- range .Errors}}
-                {{.}}
+                <p>{{.}}</p>
                 {{- end}}
                 <h2>Login</h2>
                 <form method="post" action="/login">

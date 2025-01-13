@@ -33,7 +33,7 @@ type Session interface {
 }
 
 var provides = make(map[string]Provider)
-var globalSessions *Manager
+var GlobalSessions *Manager
 
 func NewManager(provideName, cookieName string, maxlifetime int64) (*Manager, error) {
 	provider, ok := provides[provideName]
@@ -99,10 +99,6 @@ func (manager *Manager) GC() {
 }
 
 func Init() {
-	globalSessions, _ = NewManager("memory", "hnsessionid", 3600)
-	go globalSessions.GC()
-}
-
-func StartSession(w http.ResponseWriter, r *http.Request) Session {
-	return globalSessions.SessionStart(w, r)
+	GlobalSessions, _ = NewManager("memory", "hnsessionid", 3600)
+	go GlobalSessions.GC()
 }

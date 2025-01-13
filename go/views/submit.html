@@ -1,0 +1,24 @@
+{{define "title"}}Submit new link{{end}}
+{{define "body"}}
+{{- range .Errors}}
+<p>{{.}}</p>
+{{- end}}
+<form action="/submit" method="post">
+    <input type="hidden" name="token" value="{{.Form.Token}}">
+    <fieldset>
+        <label for="title">Title</label>
+        <input type="text" name="title" id="title" required>
+    </fieldset>
+    <fieldset>
+        <label for="url">Url</label>
+        <input type="url" name="url" id="url">
+    </fieldset>
+    <fieldset>
+        <label for="text">Text</label>
+        <textarea name="text" id="text"></textarea>
+    </fieldset>
+    <fieldset>
+        <button type="submit">Submit</button>
+    </fieldset>
+</form>
+{{end}}
