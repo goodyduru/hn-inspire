@@ -90,8 +90,8 @@ func Setup() *http.ServeMux {
 	return mux
 }
 
-func renderTemplate(w http.ResponseWriter, pageName, templateName string, data any) error {
-	err := templates[pageName].ExecuteTemplate(w, templateName, data)
+func renderTemplate(w http.ResponseWriter, pageName string, data any) error {
+	err := templates[pageName].Execute(w, data)
 	return err
 }
 
