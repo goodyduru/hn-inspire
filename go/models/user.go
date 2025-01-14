@@ -11,6 +11,7 @@ import (
 type User struct {
 	ID       int
 	Username string
+	Email    string
 	Password string
 	IsAdmin  bool
 	Joined   time.Time
@@ -43,8 +44,13 @@ func (u *User) usernameExists() error {
 }
 
 func (u *User) ReadByUsername() error {
-	return db.QueryRow("SELECT id, password, is_admin, date_joined, karma, COALESCE(about, '') FROM users WHERE username = $1", u.Username).
-		Scan(&u.ID, &u.Password, &u.IsAdmin, &u.Joined, &u.Karma, &u.About)
+	return db.QueryRow("SELECT id, COALESCE(email, ''), password, is_admin, date_joined, karma, COALESCE(about, '') FROM users WHERE username = $1", u.Username).
+		Scan(&u.ID, &u.Email, &u.Password, &u.IsAdmin, &u.Joined, &u.Karma, &u.About)
+}
+
+func (u *User) Update() error {
+	_, err := db.Exec(`UPDATE users SET (email, about) = ($2, $3) WHERE id=$1`, u.ID, u.Email, u.About)
+	return err
 }
 
 func hash(password string) string {

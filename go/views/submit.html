@@ -4,7 +4,7 @@
 <p>{{.}}</p>
 {{- end}}
 <form action="/submit" method="post">
-    <input type="hidden" name="token" value="{{.Form.Token}}">
+    <input type="hidden" name="token" value="{{.Form}}">
     <fieldset>
         <label for="title">Title</label>
         <input type="text" name="title" id="title" required>

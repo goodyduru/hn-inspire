@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS users;
 
 CREATE TABLE users (
     id          serial primary key,
+    email       varchar(254) unique,
     username    varchar(150) not null unique,
     password    varchar(128) not null,
     is_admin    boolean default false,

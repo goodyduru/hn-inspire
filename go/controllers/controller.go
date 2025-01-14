@@ -17,16 +17,15 @@ import (
 var templates map[string]*template.Template
 
 type hnContextKey string
+type formToken = string
 
 type pageData struct {
-	Errors []string
-	User   *models.User
-	Posts  []models.Post
-	Form   form
-}
-
-type form struct {
-	Token string
+	Errors      []string
+	CurrentUser *models.User
+	User        *models.User
+	Posts       []models.Post
+	Form        formToken
+	Title       string
 }
 
 func pluralize(count int) string {
@@ -72,6 +71,8 @@ func Setup() *http.ServeMux {
 	templates["login"] = template.Must(template.ParseFiles("views/login.html"))
 	templates["index"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/index.html"))
 	templates["submit"] = template.Must(template.ParseFiles("views/base.html", "views/submit.html"))
+	templates["user"] = template.Must(template.ParseFiles("views/base.html", "views/profile.html"))
+	templates["mixed"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/mixed.html"))
 	mux := http.NewServeMux()
 
 	// auth
@@ -87,6 +88,12 @@ func Setup() *http.ServeMux {
 
 	// home
 	mux.HandleFunc("GET /", defaultHandler(all))
+
+	// user
+	mux.HandleFunc("GET /user", checkUserID(profile))
+	mux.HandleFunc("POST /user", loginRequired(updateProfile))
+	mux.HandleFunc("GET /submitted", checkUserID(submitted))
+	mux.HandleFunc("GET /favorites", checkUserID(favorites))
 	return mux
 }
 
@@ -122,6 +129,30 @@ func loginRequired(fn func(context.Context, http.ResponseWriter, *http.Request))
 		}
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
+		fn(ctx, w, r)
+	}
+}
+
+func checkUserID(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := r.URL.Query().Get("id")
+		if user == "" {
+			http.Error(w, "No such user exist", http.StatusNotFound)
+			return
+		}
+		u := models.User{Username: user}
+		if err := u.ReadByUsername(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if u.ID == 0 {
+			http.Error(w, "No such user exist", http.StatusNotFound)
+			return
+		}
+		ctx := r.Context()
+		sess := sessions.GlobalSessions.SessionStart(w, r)
+		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
+		ctx = context.WithValue(ctx, hnContextKey("user"), &u)
 		fn(ctx, w, r)
 	}
 }

@@ -1,0 +1,34 @@
+{{define "title"}}Profile: {{.User.Username}} {{end}}
+{{define "body"}}
+<section>
+    <p><span>user: </span> {{.User.Username}}</p>
+    <p><span>created: </span>{{.User.Joined.Format "Jan 02, 2006"}}</p>
+    <p><span>karma: </span>{{.User.Karma}}</p>
+    {{if .Form}}
+    {{range .Errors}}
+    {{.}}
+    {{end}}
+    <form action="/user" method="post">
+        <input type="hidden" name="token" value="{{.Form}}">
+        <input type="hidden" name="id" value="{{.User.Username}}">
+        <fieldset>
+            <label for="email">email:</label>
+            <input type="email" name="email" id="email" value="{{.User.Email}}">
+        </fieldset>
+        <fieldset>
+            <label for="about">about:</label>
+            <textarea name="about" id="about">{{.User.About}}</textarea>"
+        </fieldset>
+        <p><a href="/submitted?id={{.User.Username}}">submitted</a></p>
+        <p><a href="/threads?id={{.User.Username}}">comments</a></p>
+        <p><a href="/favorites?id={{.User.Username}}">favorites</a></p>
+        <input type="submit" value="update">
+    </form>
+    {{else}}
+    <p><span>about: </span> {{.User.About}}</p>
+    <p><a href="/submitted?id={{.User.Username}}">submitted</a></p>
+    <p><a href="/threads?id={{.User.Username}}">comments</a></p>
+    <p><a href="/favorites?id={{.User.Username}}">favorites</a></p>
+    {{end}}
+</section>
+{{end}}

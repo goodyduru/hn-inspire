@@ -11,9 +11,9 @@
             <nav>
                 <a href="/">Home</a>
 
-                {{if .User}}
+                {{if .CurrentUser}}
                 <a href="/submit">Submit</a>
-                <a href="/user?id={{.User.Username}}">{{.User.Username}}</a>
+                <a href="/user?id={{.CurrentUser.Username}}">{{.CurrentUser.Username}}</a>
                 <a href="/logout">Logout</a>
                 {{else}}
                 <a href="/login">Login</a>

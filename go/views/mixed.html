@@ -1,0 +1,60 @@
+{{define "title"}}{{.User.Username}} favorites{{end}}
+{{define "body"}}
+<section>
+    <ol>
+        {{ range .Posts }}
+        <li>
+            {{ if (eq .ParentID 0) }}
+                {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) (eq .VotedID 0) }}
+                <a href="/vote?id={{.ID}}">▲</a>
+                {{ end }}
+                {{ if ne .Url "" }}
+                <a href="{{.Url}}">{{.Title}}</a>
+                {{ else }}
+                <a href="/item?id={{.ID}}">{{.Title}}</a>
+                {{end}}
+                <div>
+                    <span>{{.Votes}} point{{pluralize .Votes}} by</span>
+                    <span><a href="/user?id={{.Author}}">{{.Author}}</a></span>
+                    <span><a href="/item?id={{.ID}}"> {{timesince .CreatedAt}} ago</a></span> |
+                    {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) }}
+                        <span>
+                                {{ if (gt .FlaggedID 0) }}
+                                <a href="/flag?id={{.ID}}&action=un">unflag</a>
+                                {{ else }}
+                                <a href="/flag?id={{.ID}}">flag</a>
+                                {{end}}
+                                |
+                        </span>
+                    {{end}}
+                    <span>
+                        <a href="/item?id={{.ID}}">
+                            {{ if (eq .NumReplies 0) }}
+                                discuss
+                            {{ else }}
+                                {{.NumReplies}} comment {{pluralize .NumReplies}}
+                            {{end}}
+                        </a>
+                    </span>
+                </div>
+            {{ else }}
+            <header>
+                <div>
+                    {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) (eq .VotedID 0) }}
+                    <a href="/vote?id={{.ID}}">▲</a>
+                    {{ end }}
+                    <span><a href="/user?id={{.Author}}">{{.Author}}</a></span>
+                    <span><a href="/item?id={{.ID}}">{{timesince .CreatedAt}} ago</a></span> |
+                    <span><a href="/item?id={{.ParentID}}">parent</a></span>
+                    <span><a href="/item?id={{.ParentID}}#{{.ID}}">context</a></span>
+                </div>
+            </header>
+            <article>{{.Text}}</article>
+            {{end}}
+        </li>
+        {{else}}
+        <p>{{index .Errors 0}}</p>
+        {{end}}
+    </ol>
+</section>
+{{end}}
