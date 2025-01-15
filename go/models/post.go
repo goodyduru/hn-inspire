@@ -501,3 +501,28 @@ func (p *Post) GetComments() ([]Post, error) {
 	}
 	return posts, nil
 }
+
+func (p *Post) Vote(currentUserId int) error {
+	var id int
+	_ = db.QueryRow("SELECT user_id FROM votes WHERE user_id=$1 AND post_id=$2", currentUserId, p.ID).Scan(&id)
+	if id == p.ID {
+		return nil
+	}
+	_, err := db.Exec("INSERT INTO votes(user_id, post_id, amount) VALUES($1, $2, 1)", currentUserId, p.ID)
+	return err
+}
+
+func (p *Post) Flag(currentUserId int) error {
+	var id int
+	_ = db.QueryRow("SELECT user_id FROM flags WHERE user_id=$1 AND post_id=$2", currentUserId, p.ID).Scan(&id)
+	if id == p.ID {
+		return nil
+	}
+	_, err := db.Exec("INSERT INTO flags(user_id, post_id) VALUES($1, $2)", currentUserId, p.ID)
+	return err
+}
+
+func (p *Post) Unflag(currentUserId int) error {
+	_, err := db.Exec("DELETE FROM flags WHERE user_id=$1 AND post_id=$2", currentUserId, p.ID)
+	return err
+}

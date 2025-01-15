@@ -124,6 +124,8 @@ func Setup() *http.ServeMux {
 	mux.HandleFunc("GET /item", checkItemID(single))
 	mux.HandleFunc("POST /comment", loginRequired(reply))
 	mux.HandleFunc("GET /reply", loginRequired(replyForm))
+	mux.HandleFunc("GET /vote", checkItemID(voteOrFlag))
+	mux.HandleFunc("GET /flag", checkItemID(voteOrFlag))
 
 	// home
 	mux.HandleFunc("GET /", defaultHandler(all))

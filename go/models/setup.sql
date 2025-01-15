@@ -45,4 +45,16 @@ CREATE TABLE favorites (
     user_id     integer references users on delete cascade,
     post_id     integer references posts on delete cascade,
     PRIMARY KEY (user_id, post_id)
-)
+);
+
+CREATE OR REPLACE FUNCTION vote_insert_func()
+    RETURNS trigger AS
+    $$
+    BEGIN
+        UPDATE posts SET votes=votes+NEW."amount" WHERE id=NEW."post_id";
+        RETURN NEW;
+    END;
+    $$
+LANGUAGE 'plpgsql';
+
+CREATE TRIGGER vote_insert_trigger AFTER INSERT ON "votes" FOR EACH ROW EXECUTE PROCEDURE vote_insert_func();

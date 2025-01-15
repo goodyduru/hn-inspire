@@ -357,3 +357,32 @@ func replyForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	pg := &pageData{CurrentUser: user, Form: form, Posts: posts}
 	renderTemplate(w, "reply", pg)
 }
+
+func voteOrFlag(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+	post := ctx.Value(hnContextKey("post")).(models.Post)
+	user := sess.Get("user")
+	var err error
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+	u := user.(*models.User)
+	path := r.URL.Path
+	if path == "/vote" {
+		err = post.Vote(u.ID)
+	} else if path == "/flag" {
+		action := r.URL.Query().Get("action")
+		if action == "un" {
+			err = post.Unflag(u.ID)
+		} else {
+			err = post.Flag(u.ID)
+		}
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/item?id=%d", post.ID), http.StatusFound)
+}
