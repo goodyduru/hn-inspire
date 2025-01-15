@@ -316,7 +316,7 @@ func GetAuthSubmittedComments(authorId, userId int) ([]Post, error) {
 							)
 							SELECT comments.lev, comments.id, comments.title, comments.url, comments.votes, comments.created_at, 
 								COALESCE(comments.parent_id, 0), username, COALESCE(user_votes.user_id, 0) AS user_voted, 
-								COALESCE(user_flags.user_id, 0) AS user_flagged
+								COALESCE(user_flags.user_id, 0) AS user_flagged, author_id
 							FROM comments
 							LEFT JOIN users ON comments.author_id=users.id
 							LEFT JOIN user_votes ON comments.id=user_votes.post_id
@@ -331,7 +331,7 @@ func GetAuthSubmittedComments(authorId, userId int) ([]Post, error) {
 	for rows.Next() {
 		var post Post
 		if err := rows.Scan(&post.Lev, &post.ID, &post.Title, &post.Url, &post.Votes, &post.CreatedAt,
-			&post.ParentID, &post.Author, &post.VotedID, &post.FlaggedID); err != nil {
+			&post.ParentID, &post.Author, &post.VotedID, &post.FlaggedID, &post.AuthorID); err != nil {
 			return nil, err
 		}
 		posts = append(posts, post)

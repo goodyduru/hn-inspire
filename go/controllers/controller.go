@@ -66,6 +66,12 @@ func Setup() *http.ServeMux {
 			}
 			return formattedTime
 		},
+		"indent": func(level int) string {
+			if level > 1 {
+				return fmt.Sprintf("margin-left: %dem", level-1)
+			}
+			return ""
+		},
 	}
 	templates = make(map[string]*template.Template)
 	templates["login"] = template.Must(template.ParseFiles("views/login.html"))
@@ -73,6 +79,7 @@ func Setup() *http.ServeMux {
 	templates["submit"] = template.Must(template.ParseFiles("views/base.html", "views/submit.html"))
 	templates["user"] = template.Must(template.ParseFiles("views/base.html", "views/profile.html"))
 	templates["mixed"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/mixed.html"))
+	templates["threads"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/comments.html"))
 	mux := http.NewServeMux()
 
 	// auth
@@ -94,6 +101,7 @@ func Setup() *http.ServeMux {
 	mux.HandleFunc("POST /user", loginRequired(updateProfile))
 	mux.HandleFunc("GET /submitted", checkUserID(submitted))
 	mux.HandleFunc("GET /favorites", checkUserID(favorites))
+	mux.HandleFunc("GET /threads", checkUserID(comments))
 	return mux
 }
 

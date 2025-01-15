@@ -1,0 +1,33 @@
+{{define "title"}} {{.User.Username}} comments {{end}}
+{{define "body"}}
+<ul>
+    {{range .Posts}}
+    <li id="com_{{.ID}}" n="{{.NumReplies}}" style="{{indent .Lev}}" class="{{.HtmlClass}}">
+        <header>
+            {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) (eq .VotedID 0) }}
+            <a href="/vote?id={{.ID}}">▲</a>
+            {{ end }}
+            <span><a href="/user?id={{.Author}}">{{.Author}}</a></span>
+            <span><a href="/item?id={{.ID}}">{{timesince .CreatedAt}}</a></span>
+            <span>
+                {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) }}
+                    <span>
+                        {{ if (gt .FlaggedID 0) }}
+                        <a href="/flag?id={{.ID}}&action=un">unflag</a>
+                        {{ else }}
+                        <a href="/flag?id={{.ID}}">flag</a>
+                        {{end}}
+                    </span>
+                {{end}}
+            </span>
+            <span>
+                <a class="tog" id="{{.ID}}" href="javascript:void(0)">[-]</a>
+            </span>
+        </header>
+        <article>{{.Text}}</article>
+    </li>
+    {{else}}
+    <p>{{index .Errors 0}}</p>
+    {{end}}
+</ul>
+{{end}}

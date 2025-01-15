@@ -170,6 +170,11 @@ func comments(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		posts, err = models.GetAuthSubmittedComments(u.ID, 8)
 	}
 
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// The comments are already in chronological order, This piece of code sorts the chunks in
 	// reverse. The order within each chunk is maintained. The group will be headlined by a top-level comment.
 	sortedPosts := make([]models.Post, len(posts))
@@ -185,11 +190,11 @@ func comments(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	addClasses(sortedPosts)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	e := fmt.Sprintf("%s hasn't made any comments.", u.Username)
+	p.Posts = posts
+	p.Errors = append(p.Errors, e)
+	p.User = u
+	renderTemplate(w, "threads", p)
 }
 
 func addClasses(posts []models.Post) {
