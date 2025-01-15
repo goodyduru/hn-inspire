@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"unicode"
 
 	"github.com/goodyduru/go-news/models"
 	"github.com/goodyduru/go-news/sessions"
@@ -72,6 +73,28 @@ func Setup() *http.ServeMux {
 			}
 			return ""
 		},
+		"truncatewords": func(sentence string, max int) string {
+			len := 0
+			count := 0
+			start := 0
+			prev := false
+			for i, r := range sentence {
+				isSpace := unicode.IsSpace(r)
+				if isSpace && count > 0 && !prev {
+					len++
+				} else if !isSpace {
+					if count == 0 {
+						start = i
+					}
+					count++
+				}
+				prev = isSpace
+				if len >= max {
+					return sentence[start:i] + "..."
+				}
+			}
+			return sentence
+		},
 	}
 	templates = make(map[string]*template.Template)
 	templates["login"] = template.Must(template.ParseFiles("views/login.html"))
@@ -80,6 +103,7 @@ func Setup() *http.ServeMux {
 	templates["user"] = template.Must(template.ParseFiles("views/base.html", "views/profile.html"))
 	templates["mixed"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/mixed.html"))
 	templates["threads"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/comments.html"))
+	templates["single"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/single.html"))
 	mux := http.NewServeMux()
 
 	// auth
@@ -92,6 +116,7 @@ func Setup() *http.ServeMux {
 	// post
 	mux.HandleFunc("GET /submit", loginRequired(submitForm))
 	mux.HandleFunc("POST /submit", loginRequired(submit))
+	mux.HandleFunc("GET /item", checkItemID(single))
 
 	// home
 	mux.HandleFunc("GET /", defaultHandler(all))
@@ -161,6 +186,42 @@ func checkUserID(fn func(context.Context, http.ResponseWriter, *http.Request)) h
 		sess := sessions.GlobalSessions.SessionStart(w, r)
 		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
 		ctx = context.WithValue(ctx, hnContextKey("user"), &u)
+		fn(ctx, w, r)
+	}
+}
+
+func checkItemID(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		post := r.URL.Query().Get("id")
+		if post == "" {
+			http.Error(w, "No such post exist", http.StatusNotFound)
+			return
+		}
+		id, err := strconv.ParseInt(post, 10, 64)
+		if err != nil {
+			http.Error(w, "No such post exist", http.StatusNotFound)
+		}
+		sess := sessions.GlobalSessions.SessionStart(w, r)
+		p := models.Post{ID: int(id)}
+		user := sess.Get("user")
+		if user != nil {
+			u := user.(*models.User)
+			err = p.GetAuth(u.ID)
+		} else {
+			err = p.Get()
+		}
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if p.AuthorID == 0 {
+			http.Error(w, "No such post exist", http.StatusNotFound)
+			return
+		}
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
+		ctx = context.WithValue(ctx, hnContextKey("post"), p)
 		fn(ctx, w, r)
 	}
 }

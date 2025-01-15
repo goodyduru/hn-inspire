@@ -1,0 +1,115 @@
+{{define "title"}} 
+    {{$original_post := index .Posts 0}}
+    {{if $original_post.Title }} 
+        {{$original_post.Title}}
+    {{else}}
+        {{truncatewords $original_post.Text 5}}
+    {{end}}
+{{end}}
+{{define "body"}}
+{{$original_post := index .Posts 0}}
+{{$comments := slice .Posts 1}}
+{{$num_replies := len $comments}}
+<section>
+    {{ if (eq $original_post.ParentID 0) }}
+    <header>
+        {{ if and .CurrentUser (ne $original_post.AuthorID .CurrentUser.ID) (eq $original_post.VotedID 0) }}
+            <a href="/vote?id={{$original_post.ID}}">▲</a>
+        {{ end }}
+        {{ if ne $original_post.Url "" }}
+        <h2><a href="{{$original_post.Url}}">{{$original_post.Title}}</a></h2>
+        {{ else }}
+        <h2>{{$original_post.Title}}</h2>
+        {{end}}
+        <div>
+            <span>{{$original_post.Votes}} point{{pluralize $original_post.Votes}} by</span>
+            <span><a href="/user?id={{$original_post.Author}}">{{$original_post.Author}}</a></span>
+            <span>{{timesince $original_post.CreatedAt}} ago</span> |
+            {{ if and .CurrentUser (ne $original_post.AuthorID .CurrentUser.ID) }}
+                <span>
+                        {{ if (gt $original_post.FlaggedID 0) }}
+                        <a href="/flag?id={{$original_post.ID}}&action=un">unflag</a>
+                        {{ else }}
+                        <a href="/flag?id={{$original_post.ID}}">flag</a>
+                        {{end}}
+                        |
+                </span>
+            {{end}}
+            <span>
+                <a href="/item?id={{$original_post.ID}}">
+                    {{ if $num_replies }}
+                        {{$num_replies}} comment{{pluralize $num_replies}}
+                    {{ else }}
+                        discuss
+                    {{end}}
+                </a>
+            </span>
+        </div>
+    </header>
+    {{ if $original_post.Text }}
+    <article>{{$original_post.Text}}</article>
+    {{end}}
+    {{else}}
+    <header>
+        {{ if and .CurrentUser (ne $original_post.AuthorID .CurrentUser.ID) (eq $original_post.VotedID 0) }}
+        <a href="/vote?id={{$original_post.ID}}">▲</a>
+        {{ end }}
+        <span><a href="/user?id={{$original_post.Author}}">{{$original_post.Author}}</a></span>
+        <span>{{timesince $original_post.CreatedAt}} ago</span> |
+        {{ if and .CurrentUser (ne $original_post.AuthorID .CurrentUser.ID) }}
+            <span>
+                {{ if (gt $original_post.FlaggedID 0) }}
+                <a href="/flag?id={{$original_post.ID}}&action=un">unflag</a>
+                {{ else }}
+                <a href="/flag?id={{$original_post.ID}}">flag</a>
+                {{end}}
+            </span> |
+        {{end}}
+        <span><a href="/item?id={{$original_post.ParentID}}">parent</a></span> |
+        <span><a href="/item?id={{$original_post.ParentID}}#{{$original_post.ID}}">context</a></span>
+    </header>
+    <article>{{$original_post.Text}}</article>
+    {{end}}
+</section>
+{{if .CurrentUser }}
+<section>
+    <form action="/comment" method="post">
+        <input type="hidden" name="parent" value="{{$original_post.ID}}">
+        <input type="hidden" name="token" value="{{.Form}}">
+        <textarea name="text"></textarea>
+        <button>add comment</button>
+    </form>
+</section>
+{{end}}
+<ul>
+    {{range $comments}}
+    <li id="com_{{.ID}}" n="{{.NumReplies}}" style="{{indent .Lev}}" class="{{.HtmlClass}}">
+        <header>
+            {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) (eq .VotedID 0) }}
+            <a href="/vote?id={{.ID}}">▲</a>
+            {{ end }}
+            <span><a href="/user?id={{.Author}}">{{.Author}}</a></span>
+            <span><a href="/item?id={{.ID}}">{{timesince .CreatedAt}} ago</a></span>
+            <span>
+                {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) }}
+                    <span>
+                        {{ if (gt .FlaggedID 0) }}
+                        <a href="/flag?id={{.ID}}&action=un">unflag</a>
+                        {{ else }}
+                        <a href="/flag?id={{.ID}}">flag</a>
+                        {{end}}
+                    </span>
+                {{end}}
+            </span>
+            <span>
+                <a class="tog" id="{{.ID}}" href="javascript:void(0)">[-]</a>
+            </span>
+        </header>
+        <article>{{.Text}}</article>
+        <footer><a href="/reply?id={{.ID}}&goto={{$original_post.ID}}#{{.ID}}">reply</a></footer>
+    </li>
+    {{else}}
+    <p>{{index .Errors 0}}</p>
+    {{end}}
+</ul>
+{{end}}

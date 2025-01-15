@@ -8,7 +8,7 @@ Welcome {{ if .CurrentUser }} {{.CurrentUser.Username}} {{ end }}
     <ol>
         {{ range .Posts }}
         <li>
-            {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) (eq .VotedID 0) }}
+            {{ if and $.CurrentUser (ne .Author $.CurrentUser.Username) (eq .VotedID 0) }}
             <a href="/vote?id={{.ID}}">▲</a>
             {{ end }}
             {{ if ne .Url "" }}
@@ -20,7 +20,7 @@ Welcome {{ if .CurrentUser }} {{.CurrentUser.Username}} {{ end }}
                 <span>{{.Votes}} point{{pluralize .Votes}} by</span>
                 <span><a href="/user?id={{.Author}}">{{.Author}}</a></span>
                 <span><a href="/item?id={{.ID}}"> {{timesince .CreatedAt}} ago</a></span> |
-                {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) }}
+                {{ if and $.CurrentUser (ne .Author $.CurrentUser.Username) }}
                     <span>
                             {{ if (gt .FlaggedID 0) }}
                             <a href="/flag?id={{.ID}}&action=un">unflag</a>
@@ -35,7 +35,7 @@ Welcome {{ if .CurrentUser }} {{.CurrentUser.Username}} {{ end }}
                         {{ if (eq .NumReplies 0) }}
                             discuss
                         {{ else }}
-                            {{.NumReplies}} comment {{pluralize .NumReplies}}
+                            {{.NumReplies}} comment{{pluralize .NumReplies}}
                         {{end}}
                     </a>
                 </span>

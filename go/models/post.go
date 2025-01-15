@@ -137,8 +137,7 @@ func GetAuthSubmitted(authorId, userId int) ([]Post, error) {
 								SELECT user_id, post_id FROM flags WHERE user_id=$2
 							)
 							SELECT submitted_posts.id, submitted_posts.title, submitted_posts.url, submitted_posts.votes, submitted_posts.created_at, 
-								COALESCE(comment_count, 0), COALESCE(user_votes.user_id, 0) AS user_voted, 
-								COALESCE(user_flags.user_id, 0) AS user_flagged
+								COALESCE(comment_count, 0), COALESCE(user_votes.user_id, 0), COALESCE(user_flags.user_id, 0)
 							FROM submitted_posts
 							LEFT JOIN comments_count ON submitted_posts.id=comments_count.ancestor
 							LEFT JOIN user_votes ON submitted_posts.id=user_votes.post_id
@@ -225,8 +224,8 @@ func GetAuthMixed(userId, currentUserId int) ([]Post, error) {
 							)
 							SELECT favorited_posts.id, favorited_posts.title, favorited_posts.url, favorited_posts.text,
 							 	favorited_posts.votes, COALESCE(favorited_posts.parent_id, 0), favorited_posts.created_at, 
-								COALESCE(comment_count, 0), COALESCE(user_votes.user_id, 0) AS user_voted, 
-								users.username, COALESCE(user_flags.user_id, 0) AS user_flagged
+								COALESCE(comment_count, 0), COALESCE(user_votes.user_id, 0), users.username, 
+								COALESCE(user_flags.user_id, 0)
 							FROM favorited_posts
 							LEFT JOIN comments_count ON favorited_posts.id=comments_count.ancestor
 							LEFT JOIN user_votes ON favorited_posts.id=user_votes.post_id
@@ -315,8 +314,8 @@ func GetAuthSubmittedComments(authorId, userId int) ([]Post, error) {
 								SELECT user_id, post_id FROM flags WHERE user_id=$2
 							)
 							SELECT comments.lev, comments.id, comments.text, comments.votes, comments.created_at, 
-								COALESCE(comments.parent_id, 0), username, COALESCE(user_votes.user_id, 0) AS user_voted, 
-								COALESCE(user_flags.user_id, 0) AS user_flagged, author_id
+								COALESCE(comments.parent_id, 0), username, COALESCE(user_votes.user_id, 0), 
+								COALESCE(user_flags.user_id, 0), author_id
 							FROM comments
 							LEFT JOIN users ON comments.author_id=users.id
 							LEFT JOIN user_votes ON comments.id=user_votes.post_id
@@ -363,6 +362,120 @@ func GetSubmittedComments(authorId int) ([]Post, error) {
 							LEFT JOIN users ON comments.author_id=users.id
 							ORDER BY skey
 							`, authorId, LIMIT*4)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var post Post
+		if err := rows.Scan(&post.Lev, &post.ID, &post.Text, &post.Votes, &post.CreatedAt,
+			&post.ParentID, &post.Author, &post.AuthorID); err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+func (p *Post) GetAuth(currentUserID int) error {
+	query := `SELECT title, url, text, votes, author_id, COALESCE(parent_id, 0), created_at, username, 
+				COALESCE(votes.user_id, 0), COALESCE(flags.user_id, 0)
+				FROM posts
+				LEFT JOIN users ON posts.author_id=users.id
+				LEFT JOIN votes ON posts.id=votes.post_id AND votes.user_id=$2
+				LEFT JOIN flags ON posts.id=flags.post_id AND flags.user_id=$2
+				WHERE posts.id=$1
+			`
+	err := db.QueryRow(query, p.ID, currentUserID).Scan(&p.Title, &p.Url, &p.Text, &p.Votes, &p.AuthorID, &p.ParentID,
+		&p.CreatedAt, &p.Author, &p.VotedID, &p.FlaggedID)
+	return err
+}
+
+func (p *Post) Get() error {
+	query := `SELECT title, url, text, votes, author_id, COALESCE(parent_id, 0), created_at, username
+				FROM posts
+				LEFT JOIN users ON posts.author_id=users.id
+				WHERE posts.id=$1
+			`
+	err := db.QueryRow(query, p.ID).Scan(&p.Title, &p.Url, &p.Text, &p.Votes, &p.AuthorID, &p.ParentID,
+		&p.CreatedAt, &p.Author)
+	return err
+}
+
+func (p *Post) GetAuthComments(userId int) ([]Post, error) {
+	var posts []Post
+	rows, err := db.Query(`WITH RECURSIVE submitted_comments AS (
+								SELECT 1 as lev, id, text, votes, created_at, parent_id, author_id, RIGHT('0000' || id::VARCHAR, 4) || ' ' AS skey
+								FROM posts WHERE parent_id=$1
+								UNION ALL
+								SELECT lev + 1, posts.id, posts.text, posts.votes, posts.created_at, posts.parent_id, posts.author_id,
+								skey || RIGHT('0000' || (9999-posts.votes)::VARCHAR, 4) ||
+								RIGHT('0000000000' || (EXTRACT(EPOCH FROM (NOW() - posts.created_at))::INTEGER)::VARCHAR, 10) || ' '
+								FROM posts JOIN submitted_comments ON posts.parent_id = submitted_comments.id
+							),
+							comments AS (
+								SELECT * FROM submitted_comments LIMIT $3
+							),
+							user_votes AS (
+								SELECT user_id, post_id FROM votes WHERE user_id=$2
+							),
+							user_flags AS (
+								SELECT user_id, post_id FROM flags WHERE user_id=$2
+							)
+							SELECT comments.lev, comments.id, comments.text, comments.votes, comments.created_at, 
+								COALESCE(comments.parent_id, 0), username, COALESCE(user_votes.user_id, 0), 
+								COALESCE(user_flags.user_id, 0), author_id
+							FROM comments
+							LEFT JOIN users ON comments.author_id=users.id
+							LEFT JOIN user_votes ON comments.id=user_votes.post_id
+							LEFT JOIN user_flags ON comments.id=user_flags.post_id
+							ORDER BY skey
+							`, p.ID, userId, LIMIT*4)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var post Post
+		if err := rows.Scan(&post.Lev, &post.ID, &post.Text, &post.Votes, &post.CreatedAt,
+			&post.ParentID, &post.Author, &post.VotedID, &post.FlaggedID, &post.AuthorID); err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+func (p *Post) GetComments() ([]Post, error) {
+	var posts []Post
+	rows, err := db.Query(`WITH RECURSIVE submitted_comments AS (
+								SELECT 1 as lev, id, text, votes, created_at, parent_id, author_id, RIGHT('0000' || id::VARCHAR, 4) || ' ' AS skey
+								FROM posts WHERE parent_id=$1
+								UNION ALL
+								SELECT lev + 1, posts.id, posts.text, posts.votes, posts.created_at, posts.parent_id, posts.author_id,
+								skey || RIGHT('0000' || (9999-posts.votes)::VARCHAR, 4) ||
+								RIGHT('0000000000' || (EXTRACT(EPOCH FROM (NOW() - posts.created_at))::INTEGER)::VARCHAR, 10) || ' '
+								FROM posts JOIN submitted_comments ON posts.parent_id = submitted_comments.id
+							),
+							comments AS (
+								SELECT * FROM submitted_comments LIMIT $2
+							)
+							SELECT comments.lev, comments.id, comments.text, comments.votes, comments.created_at, 
+								COALESCE(comments.parent_id, 0), username, author_id
+							FROM comments
+							LEFT JOIN users ON comments.author_id=users.id
+							ORDER BY skey
+							`, p.ID, LIMIT*4)
 	if err != nil {
 		return nil, err
 	}

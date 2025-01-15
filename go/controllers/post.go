@@ -236,3 +236,32 @@ func addClasses(posts []models.Post) {
 		posts[j].NumReplies = total
 	}
 }
+
+func single(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+	post := ctx.Value(hnContextKey("post")).(models.Post)
+	user := sess.Get("user")
+	p := &pageData{}
+	posts := []models.Post{post}
+	var err error
+	var comments []models.Post
+	if user != nil {
+		p.CurrentUser = user.(*models.User)
+		token := generateToken()
+		sess.Set("token", token)
+		p.Form = token
+		comments, err = post.GetAuthComments(p.CurrentUser.ID)
+	} else {
+		comments, err = post.GetComments()
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	addClasses(comments)
+	posts = append(posts, comments...)
+	p.Posts = posts
+	renderTemplate(w, "single", p)
+}
