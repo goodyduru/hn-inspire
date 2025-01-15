@@ -297,10 +297,10 @@ func GetMixed(userId int) ([]Post, error) {
 func GetAuthSubmittedComments(authorId, userId int) ([]Post, error) {
 	var posts []Post
 	rows, err := db.Query(`WITH RECURSIVE submitted_comments AS (
-								SELECT 0 as lev, id, title, url, votes, created_at, parent_id, author_id, RIGHT('0000' || id::VARCHAR, 4) || ' ' AS skey
+								SELECT 1 as lev, id, text, votes, created_at, parent_id, author_id, RIGHT('0000' || id::VARCHAR, 4) || ' ' AS skey
 								FROM posts WHERE author_id=$1 AND parent_id IS NOT NULL
 								UNION ALL
-								SELECT lev + 1, posts.id, posts.title, posts.url, posts.votes, posts.created_at, posts.parent_id, posts.author_id,
+								SELECT lev + 1, posts.id, posts.text, posts.votes, posts.created_at, posts.parent_id, posts.author_id,
 								skey || RIGHT('0000' || (9999-posts.votes)::VARCHAR, 4) ||
 								RIGHT('0000000000' || (EXTRACT(EPOCH FROM (NOW() - posts.created_at))::INTEGER)::VARCHAR, 10) || ' '
 								FROM posts JOIN submitted_comments ON posts.parent_id = submitted_comments.id
@@ -314,7 +314,7 @@ func GetAuthSubmittedComments(authorId, userId int) ([]Post, error) {
 							user_flags AS (
 								SELECT user_id, post_id FROM flags WHERE user_id=$2
 							)
-							SELECT comments.lev, comments.id, comments.title, comments.url, comments.votes, comments.created_at, 
+							SELECT comments.lev, comments.id, comments.text, comments.votes, comments.created_at, 
 								COALESCE(comments.parent_id, 0), username, COALESCE(user_votes.user_id, 0) AS user_voted, 
 								COALESCE(user_flags.user_id, 0) AS user_flagged, author_id
 							FROM comments
@@ -322,7 +322,7 @@ func GetAuthSubmittedComments(authorId, userId int) ([]Post, error) {
 							LEFT JOIN user_votes ON comments.id=user_votes.post_id
 							LEFT JOIN user_flags ON comments.id=user_flags.post_id
 							ORDER BY skey
-							`, authorId, userId, LIMIT)
+							`, authorId, userId, LIMIT*4)
 	if err != nil {
 		return nil, err
 	}
@@ -330,8 +330,48 @@ func GetAuthSubmittedComments(authorId, userId int) ([]Post, error) {
 
 	for rows.Next() {
 		var post Post
-		if err := rows.Scan(&post.Lev, &post.ID, &post.Title, &post.Url, &post.Votes, &post.CreatedAt,
+		if err := rows.Scan(&post.Lev, &post.ID, &post.Text, &post.Votes, &post.CreatedAt,
 			&post.ParentID, &post.Author, &post.VotedID, &post.FlaggedID, &post.AuthorID); err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+func GetSubmittedComments(authorId int) ([]Post, error) {
+	var posts []Post
+	rows, err := db.Query(`WITH RECURSIVE submitted_comments AS (
+								SELECT 1 as lev, id, text, votes, created_at, parent_id, author_id, RIGHT('0000' || id::VARCHAR, 4) || ' ' AS skey
+								FROM posts WHERE author_id=$1 AND parent_id IS NOT NULL
+								UNION ALL
+								SELECT lev + 1, posts.id, posts.text, posts.votes, posts.created_at, posts.parent_id, posts.author_id,
+								skey || RIGHT('0000' || (9999-posts.votes)::VARCHAR, 4) ||
+								RIGHT('0000000000' || (EXTRACT(EPOCH FROM (NOW() - posts.created_at))::INTEGER)::VARCHAR, 10) || ' '
+								FROM posts JOIN submitted_comments ON posts.parent_id = submitted_comments.id
+							),
+							comments AS (
+								SELECT * FROM submitted_comments LIMIT $2
+							)
+							SELECT comments.lev, comments.id, comments.text, comments.votes, comments.created_at, 
+								COALESCE(comments.parent_id, 0), username, author_id
+							FROM comments
+							LEFT JOIN users ON comments.author_id=users.id
+							ORDER BY skey
+							`, authorId, LIMIT*4)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var post Post
+		if err := rows.Scan(&post.Lev, &post.ID, &post.Text, &post.Votes, &post.CreatedAt,
+			&post.ParentID, &post.Author, &post.AuthorID); err != nil {
 			return nil, err
 		}
 		posts = append(posts, post)

@@ -8,7 +8,7 @@
             <a href="/vote?id={{.ID}}">▲</a>
             {{ end }}
             <span><a href="/user?id={{.Author}}">{{.Author}}</a></span>
-            <span><a href="/item?id={{.ID}}">{{timesince .CreatedAt}}</a></span>
+            <span><a href="/item?id={{.ID}}">{{timesince .CreatedAt}} ago</a></span>
             <span>
                 {{ if and $.CurrentUser (ne .AuthorID $.CurrentUser.ID) }}
                     <span>

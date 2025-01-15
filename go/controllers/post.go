@@ -167,7 +167,7 @@ func comments(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		p.CurrentUser = currentUser.(*models.User)
 		posts, err = models.GetAuthSubmittedComments(u.ID, p.CurrentUser.ID)
 	} else {
-		posts, err = models.GetAuthSubmittedComments(u.ID, 8)
+		posts, err = models.GetSubmittedComments(u.ID)
 	}
 
 	if err != nil {
@@ -224,6 +224,7 @@ func addClasses(posts []models.Post) {
 		ids = append(ids, posts[i].ID)
 		num_replies = append(num_replies, 1)
 		comment_indices = append(comment_indices, i)
+		prev_level = posts[i].Lev
 	}
 	total := 0
 	for len(stack) > 0 {
