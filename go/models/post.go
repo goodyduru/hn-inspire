@@ -23,8 +23,14 @@ type Post struct {
 var LIMIT = 30
 
 func (p *Post) Create() error {
-	_, err := db.Exec(`INSERT INTO posts (title, url, text, votes, author_id) VALUES ($1, $2, $3, $4, $5)`,
-		p.Title, p.Url, p.Text, 1, p.AuthorID)
+	var err error
+	if p.ParentID > 0 {
+		err = db.QueryRow(`INSERT INTO posts (title, url, text, votes, author_id, parent_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+			p.Title, p.Url, p.Text, 1, p.AuthorID, p.ParentID).Scan(&p.ID)
+	} else {
+		_, err = db.Exec(`INSERT INTO posts (title, url, text, votes, author_id) VALUES ($1, $2, $3, $4, $5)`,
+			p.Title, p.Url, p.Text, 1, p.AuthorID)
+	}
 	return err
 }
 

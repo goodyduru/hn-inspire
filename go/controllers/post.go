@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/goodyduru/go-news/models"
@@ -16,7 +17,7 @@ func submitForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	p := pageData{CurrentUser: sess.Get("user").(*models.User)}
 	f := generateToken()
 	sess.Set("token", f)
-	p.Form = f
+	p.Form.Token = f
 	if err := renderTemplate(w, "submit", &p); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -41,7 +42,7 @@ func submit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 	f := generateToken()
 	sess.Set("token", f)
-	p := pageData{CurrentUser: user, Form: f}
+	p := pageData{CurrentUser: user, Form: form{Token: f}}
 
 	formErrors := make([]string, 0)
 	if token != storedToken {
@@ -249,7 +250,7 @@ func single(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		p.CurrentUser = user.(*models.User)
 		token := generateToken()
 		sess.Set("token", token)
-		p.Form = token
+		p.Form.Token = token
 		comments, err = post.GetAuthComments(p.CurrentUser.ID)
 	} else {
 		comments, err = post.GetComments()
@@ -264,4 +265,95 @@ func single(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	posts = append(posts, comments...)
 	p.Posts = posts
 	renderTemplate(w, "single", p)
+}
+
+func reply(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+	storedToken := sess.Get("token")
+	if storedToken == nil {
+		http.Error(w, "Invalid submission", http.StatusForbidden)
+		return
+	}
+
+	user := sess.Get("user").(*models.User)
+	storedToken = storedToken.(string)
+	parent := r.PostFormValue("parent")
+	token := r.PostFormValue("token")
+	url := strings.Trim(r.PostFormValue("goto"), "/")
+	text := strings.TrimSpace(r.PostFormValue("text"))
+
+	if token != storedToken || text == "" {
+		http.Error(w, "Invalid submission", http.StatusForbidden)
+		return
+	}
+
+	parentID, err := strconv.ParseInt(parent, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid submission", http.StatusForbidden)
+		return
+	}
+
+	p := models.Post{ID: int(parentID)}
+	err = p.Get()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if p.AuthorID == 0 {
+		http.Error(w, "Invalid submission", http.StatusNotFound)
+		return
+	}
+	newPost := models.Post{
+		ParentID: p.ID,
+		AuthorID: user.ID,
+		Text:     text,
+	}
+	err = newPost.Create()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sess.Delete("token")
+	if !strings.Contains(url, "#") {
+		url = fmt.Sprintf("/%s#%d", url, newPost.ID)
+	} else {
+		url = "/" + url
+	}
+	http.Redirect(w, r, url, http.StatusFound)
+}
+
+func replyForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+	user := sess.Get("user").(*models.User)
+	parent := r.URL.Query().Get("id")
+	url := r.URL.Query().Get("goto")
+	parentID, err := strconv.ParseInt(parent, 10, 64)
+	if err != nil {
+		http.Error(w, "No such post exist", http.StatusNotFound)
+		return
+	}
+
+	p := models.Post{ID: int(parentID)}
+	err = p.GetAuth(user.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if p.AuthorID == 0 {
+		http.Error(w, "No such post exist", http.StatusNotFound)
+		return
+	}
+	if p.ParentID == 0 {
+		http.Redirect(w, r, fmt.Sprintf("/item?id=%d", p.ID), http.StatusFound)
+		return
+	}
+
+	form := form{
+		Token: generateToken(),
+		Goto:  url,
+	}
+	posts := []models.Post{p}
+	sess.Set("token", form.Token)
+	pg := &pageData{CurrentUser: user, Form: form, Posts: posts}
+	renderTemplate(w, "reply", pg)
 }

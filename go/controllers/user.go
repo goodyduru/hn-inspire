@@ -18,7 +18,7 @@ func profile(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if currentUser != nil {
 		p.CurrentUser = currentUser.(*models.User)
 		if p.CurrentUser.ID == u.ID {
-			p.Form = generateToken()
+			p.Form.Token = generateToken()
 			sess.Set("token", p.Form)
 		}
 	}

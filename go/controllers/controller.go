@@ -18,14 +18,18 @@ import (
 var templates map[string]*template.Template
 
 type hnContextKey string
-type formToken = string
+
+type form struct {
+	Token string
+	Goto  string
+}
 
 type pageData struct {
 	Errors      []string
 	CurrentUser *models.User
 	User        *models.User
 	Posts       []models.Post
-	Form        formToken
+	Form        form
 	Title       string
 }
 
@@ -104,6 +108,7 @@ func Setup() *http.ServeMux {
 	templates["mixed"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/mixed.html"))
 	templates["threads"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/comments.html"))
 	templates["single"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/single.html"))
+	templates["reply"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/reply.html"))
 	mux := http.NewServeMux()
 
 	// auth
@@ -117,6 +122,8 @@ func Setup() *http.ServeMux {
 	mux.HandleFunc("GET /submit", loginRequired(submitForm))
 	mux.HandleFunc("POST /submit", loginRequired(submit))
 	mux.HandleFunc("GET /item", checkItemID(single))
+	mux.HandleFunc("POST /comment", loginRequired(reply))
+	mux.HandleFunc("GET /reply", loginRequired(replyForm))
 
 	// home
 	mux.HandleFunc("GET /", defaultHandler(all))
@@ -157,7 +164,7 @@ func loginRequired(fn func(context.Context, http.ResponseWriter, *http.Request))
 		sess := sessions.GlobalSessions.SessionStart(w, r)
 		user := sess.Get("user")
 		if user == nil {
-			http.Error(w, "You are not logged in", http.StatusUnauthorized)
+			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 		ctx := r.Context()
@@ -193,10 +200,6 @@ func checkUserID(fn func(context.Context, http.ResponseWriter, *http.Request)) h
 func checkItemID(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		post := r.URL.Query().Get("id")
-		if post == "" {
-			http.Error(w, "No such post exist", http.StatusNotFound)
-			return
-		}
 		id, err := strconv.ParseInt(post, 10, 64)
 		if err != nil {
 			http.Error(w, "No such post exist", http.StatusNotFound)

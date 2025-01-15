@@ -1,0 +1,37 @@
+{{define "title"}} 
+    {{$post := index .Posts 0}}
+    Reply to {{truncatewords $post.Text 5}}
+{{end}}
+{{define "body"}}
+{{$post := index .Posts 0}}
+<header>
+    {{ if and .CurrentUser (ne $post.AuthorID .CurrentUser.ID) (eq $post.VotedID 0) }}
+    <a href="/vote?id={{$post.ID}}">▲</a>
+    {{ end }}
+    <span><a href="/user?id={{$post.Author}}">{{$post.Author}}</a></span>
+    <span>{{timesince $post.CreatedAt}} ago</span> |
+    <span><a href="/item?id={{$post.ParentID}}">parent</a></span> |
+    {{ if and .CurrentUser (ne $post.AuthorID .CurrentUser.ID) }}
+        <span>
+            {{ if (gt $post.FlaggedID 0) }}
+            <a href="/flag?id={{$post.ID}}&action=un">unflag</a>
+            {{ else }}
+            <a href="/flag?id={{$post.ID}}">flag</a>
+            {{end}}
+        </span> |
+    {{end}}
+</header>
+<article>{{$post.Text}}</article>
+</section>
+{{if and .CurrentUser (ne $post.AuthorID .CurrentUser.ID) }}
+<section>
+<form action="/comment" method="post">
+    <input type="hidden" name="parent" value="{{$post.ID}}">
+    <input type="hidden" name="token" value="{{.Form.Token}}">
+    <input type="hidden" name="goto" value="/item?id={{.Form.Goto}}">
+    <textarea name="text" required></textarea>
+    <button>reply</button>
+</form>
+</section>
+{{end}}
+{{end}}

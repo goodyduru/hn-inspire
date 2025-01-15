@@ -4,12 +4,12 @@
     <p><span>user: </span> {{.User.Username}}</p>
     <p><span>created: </span>{{.User.Joined.Format "Jan 02, 2006"}}</p>
     <p><span>karma: </span>{{.User.Karma}}</p>
-    {{if .Form}}
+    {{if .Form.Token}}
     {{range .Errors}}
     {{.}}
     {{end}}
     <form action="/user" method="post">
-        <input type="hidden" name="token" value="{{.Form}}">
+        <input type="hidden" name="token" value="{{.Form.Token}}">
         <input type="hidden" name="id" value="{{.User.Username}}">
         <fieldset>
             <label for="email">email:</label>

@@ -66,17 +66,18 @@
             </span> |
         {{end}}
         <span><a href="/item?id={{$original_post.ParentID}}">parent</a></span> |
-        <span><a href="/item?id={{$original_post.ParentID}}#{{$original_post.ID}}">context</a></span>
+        <span><a href="/item?id={{$original_post.ParentID}}%23{{$original_post.ID}}">context</a></span>
     </header>
     <article>{{$original_post.Text}}</article>
     {{end}}
 </section>
-{{if .CurrentUser }}
+{{if and .CurrentUser (ne $original_post.AuthorID .CurrentUser.ID) }}
 <section>
     <form action="/comment" method="post">
         <input type="hidden" name="parent" value="{{$original_post.ID}}">
-        <input type="hidden" name="token" value="{{.Form}}">
-        <textarea name="text"></textarea>
+        <input type="hidden" name="token" value="{{.Form.Token}}">
+        <input type="hidden" name="goto" value="item?id={{$original_post.ID}}">
+        <textarea name="text" required></textarea>
         <button>add comment</button>
     </form>
 </section>
@@ -106,7 +107,7 @@
             </span>
         </header>
         <article>{{.Text}}</article>
-        <footer><a href="/reply?id={{.ID}}&goto={{$original_post.ID}}#{{.ID}}">reply</a></footer>
+        <footer><a href="/reply?id={{.ID}}&goto={{$original_post.ID}}%23{{.ID}}">reply</a></footer>
     </li>
     {{else}}
     <p>{{index .Errors 0}}</p>
