@@ -365,22 +365,17 @@ func voteOrFlag(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	post := ctx.Value(hnContextKey("post")).(models.Post)
-	user := sess.Get("user")
+	user := sess.Get("user").(*models.User)
 	var err error
-	if user == nil {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-	u := user.(*models.User)
 	path := r.URL.Path
 	if path == "/vote" {
-		err = post.Vote(u.ID)
+		err = post.Vote(user.ID)
 	} else if path == "/flag" {
 		action := r.URL.Query().Get("action")
 		if action == "un" {
-			err = post.Unflag(u.ID)
+			err = post.Unflag(user.ID)
 		} else {
-			err = post.Flag(u.ID)
+			err = post.Flag(user.ID)
 		}
 	}
 

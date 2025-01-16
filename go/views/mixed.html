@@ -32,7 +32,7 @@
                             {{ if (eq .NumReplies 0) }}
                                 discuss
                             {{ else }}
-                                {{.NumReplies}} comment {{pluralize .NumReplies}}
+                                {{.NumReplies}} comment{{pluralize .NumReplies}}
                             {{end}}
                         </a>
                     </span>

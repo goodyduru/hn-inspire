@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"crypto/md5"
 	"fmt"
 	"html/template"
@@ -12,7 +11,6 @@ import (
 	"unicode"
 
 	"github.com/goodyduru/go-news/models"
-	"github.com/goodyduru/go-news/sessions"
 )
 
 var templates map[string]*template.Template
@@ -112,30 +110,30 @@ func Setup() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// auth
-	mux.HandleFunc("GET /register", defaultHandler(loginForm))
-	mux.HandleFunc("POST /register", authHandler(register))
-	mux.HandleFunc("GET /login", defaultHandler(loginForm))
-	mux.HandleFunc("POST /login", authHandler(login))
-	mux.HandleFunc("GET /logout", defaultHandler(logout))
+	mux.Handle("GET /register", defaultHandler(http.HandlerFunc(loginForm)))
+	mux.Handle("POST /register", authHandler(http.HandlerFunc(register)))
+	mux.Handle("GET /login", defaultHandler(http.HandlerFunc(loginForm)))
+	mux.Handle("POST /login", authHandler(http.HandlerFunc(login)))
+	mux.Handle("GET /logout", defaultHandler(http.HandlerFunc(logout)))
 
 	// post
-	mux.HandleFunc("GET /submit", loginRequired(submitForm))
-	mux.HandleFunc("POST /submit", loginRequired(submit))
-	mux.HandleFunc("GET /item", checkItemID(single))
-	mux.HandleFunc("POST /comment", loginRequired(reply))
-	mux.HandleFunc("GET /reply", loginRequired(replyForm))
-	mux.HandleFunc("GET /vote", checkItemID(voteOrFlag))
-	mux.HandleFunc("GET /flag", checkItemID(voteOrFlag))
+	mux.Handle("GET /submit", loginRequired(http.HandlerFunc(submitForm)))
+	mux.Handle("POST /submit", loginRequired(http.HandlerFunc(submit)))
+	mux.Handle("GET /item", checkItemID(http.HandlerFunc(single)))
+	mux.Handle("POST /comment", loginRequired(http.HandlerFunc(reply)))
+	mux.Handle("GET /reply", loginRequired(http.HandlerFunc(replyForm)))
+	mux.Handle("GET /vote", loginRequired(checkItemID(http.HandlerFunc(voteOrFlag))))
+	mux.Handle("GET /flag", loginRequired(checkItemID(http.HandlerFunc(voteOrFlag))))
 
 	// home
-	mux.HandleFunc("GET /", defaultHandler(all))
+	mux.Handle("GET /", defaultHandler(http.HandlerFunc(all)))
 
 	// user
-	mux.HandleFunc("GET /user", checkUserID(profile))
-	mux.HandleFunc("POST /user", loginRequired(updateProfile))
-	mux.HandleFunc("GET /submitted", checkUserID(submitted))
-	mux.HandleFunc("GET /favorites", checkUserID(favorites))
-	mux.HandleFunc("GET /threads", checkUserID(comments))
+	mux.Handle("GET /user", checkUserID(http.HandlerFunc(profile)))
+	mux.Handle("POST /user", loginRequired(http.HandlerFunc(updateProfile)))
+	mux.Handle("GET /submitted", checkUserID(http.HandlerFunc(submitted)))
+	mux.Handle("GET /favorites", checkUserID(http.HandlerFunc(favorites)))
+	mux.Handle("GET /threads", checkUserID(http.HandlerFunc(comments)))
 	return mux
 }
 
@@ -150,83 +148,4 @@ func generateToken() string {
 	io.WriteString(h, "examplexxxx....")
 	token := fmt.Sprintf("%x", h.Sum(nil))
 	return token
-}
-
-func defaultHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		sess := sessions.GlobalSessions.SessionStart(w, r)
-		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
-		fn(w, r.WithContext(ctx))
-	}
-}
-
-func loginRequired(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sess := sessions.GlobalSessions.SessionStart(w, r)
-		user := sess.Get("user")
-		if user == nil {
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return
-		}
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
-		fn(w, r.WithContext(ctx))
-	}
-}
-
-func checkUserID(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		user := r.URL.Query().Get("id")
-		if user == "" {
-			http.Error(w, "No such user exist", http.StatusNotFound)
-			return
-		}
-		u := models.User{Username: user}
-		if err := u.ReadByUsername(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if u.ID == 0 {
-			http.Error(w, "No such user exist", http.StatusNotFound)
-			return
-		}
-		ctx := r.Context()
-		sess := sessions.GlobalSessions.SessionStart(w, r)
-		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
-		ctx = context.WithValue(ctx, hnContextKey("user"), &u)
-		fn(w, r.WithContext(ctx))
-	}
-}
-
-func checkItemID(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		post := r.URL.Query().Get("id")
-		id, err := strconv.ParseInt(post, 10, 64)
-		if err != nil {
-			http.Error(w, "No such post exist", http.StatusNotFound)
-		}
-		sess := sessions.GlobalSessions.SessionStart(w, r)
-		p := models.Post{ID: int(id)}
-		user := sess.Get("user")
-		if user != nil {
-			u := user.(*models.User)
-			err = p.GetAuth(u.ID)
-		} else {
-			err = p.Get()
-		}
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if p.AuthorID == 0 {
-			http.Error(w, "No such post exist", http.StatusNotFound)
-			return
-		}
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
-		ctx = context.WithValue(ctx, hnContextKey("post"), p)
-		fn(w, r.WithContext(ctx))
-	}
 }

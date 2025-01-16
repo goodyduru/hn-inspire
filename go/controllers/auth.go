@@ -1,12 +1,10 @@
 package controllers
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"net/http"
 	"regexp"
-	"strings"
 
 	"github.com/goodyduru/go-news/models"
 	"github.com/goodyduru/go-news/sessions"
@@ -29,39 +27,6 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
 	sess.Set("register_token", l.Register)
 	if err := renderTemplate(w, "login", l); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func authHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		sess := sessions.GlobalSessions.SessionStart(w, r)
-		registerToken := sess.Get("register_token")
-		loginToken := sess.Get("login_token")
-		if registerToken == nil || loginToken == nil {
-			http.Error(w, "Invalid submission", http.StatusForbidden)
-			return
-		}
-		var token string
-		if strings.Contains(r.URL.Path, "login") {
-			token = loginToken.(string)
-		} else {
-			token = registerToken.(string)
-		}
-		pageData := loginPage{
-			Login:    generateToken(),
-			Register: generateToken(),
-		}
-		sess.Set("login_token", pageData.Login)
-		sess.Set("register_token", pageData.Register)
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
-		ctx = context.WithValue(ctx, hnContextKey("token"), token)
-		ctx = context.WithValue(ctx, hnContextKey("page_data"), &pageData)
-		fn(w, r.WithContext(ctx))
 	}
 }
 
