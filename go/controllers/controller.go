@@ -100,13 +100,15 @@ func Setup() *http.ServeMux {
 	}
 	templates = make(map[string]*template.Template)
 	templates["login"] = template.Must(template.ParseFiles("views/login.html"))
-	templates["index"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/index.html"))
 	templates["submit"] = template.Must(template.ParseFiles("views/base.html", "views/submit.html"))
 	templates["user"] = template.Must(template.ParseFiles("views/base.html", "views/profile.html"))
-	templates["mixed"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/mixed.html"))
-	templates["threads"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/comments.html"))
-	templates["single"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/single.html"))
-	templates["reply"] = template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html", "views/reply.html"))
+
+	base := template.Must(template.New("base.html").Funcs(funcMap).ParseFiles("views/base.html"))
+	templates["index"], _ = template.Must(base.Clone()).ParseFiles("views/index.html")
+	templates["mixed"], _ = template.Must(base.Clone()).ParseFiles("views/mixed.html")
+	templates["threads"], _ = template.Must(base.Clone()).ParseFiles("views/comments.html")
+	templates["single"], _ = template.Must(base.Clone()).ParseFiles("views/single.html")
+	templates["reply"], _ = template.Must(base.Clone()).ParseFiles("views/reply.html")
 	mux := http.NewServeMux()
 
 	// auth
