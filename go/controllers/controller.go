@@ -152,16 +152,16 @@ func generateToken() string {
 	return token
 }
 
-func defaultHandler(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func defaultHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		sess := sessions.GlobalSessions.SessionStart(w, r)
 		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
-		fn(ctx, w, r)
+		fn(w, r.WithContext(ctx))
 	}
 }
 
-func loginRequired(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func loginRequired(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sess := sessions.GlobalSessions.SessionStart(w, r)
 		user := sess.Get("user")
@@ -171,11 +171,11 @@ func loginRequired(fn func(context.Context, http.ResponseWriter, *http.Request))
 		}
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
-		fn(ctx, w, r)
+		fn(w, r.WithContext(ctx))
 	}
 }
 
-func checkUserID(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func checkUserID(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.URL.Query().Get("id")
 		if user == "" {
@@ -195,11 +195,11 @@ func checkUserID(fn func(context.Context, http.ResponseWriter, *http.Request)) h
 		sess := sessions.GlobalSessions.SessionStart(w, r)
 		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
 		ctx = context.WithValue(ctx, hnContextKey("user"), &u)
-		fn(ctx, w, r)
+		fn(w, r.WithContext(ctx))
 	}
 }
 
-func checkItemID(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func checkItemID(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		post := r.URL.Query().Get("id")
 		id, err := strconv.ParseInt(post, 10, 64)
@@ -227,6 +227,6 @@ func checkItemID(fn func(context.Context, http.ResponseWriter, *http.Request)) h
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
 		ctx = context.WithValue(ctx, hnContextKey("post"), p)
-		fn(ctx, w, r)
+		fn(w, r.WithContext(ctx))
 	}
 }

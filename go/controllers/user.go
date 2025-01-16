@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -10,7 +9,8 @@ import (
 	"github.com/goodyduru/go-news/sessions"
 )
 
-func profile(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func profile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	u := ctx.Value(hnContextKey("user")).(*models.User)
 	currentUser := sess.Get("user")
@@ -19,14 +19,14 @@ func profile(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		p.CurrentUser = currentUser.(*models.User)
 		if p.CurrentUser.ID == u.ID {
 			p.Form.Token = generateToken()
-			sess.Set("token", p.Form)
+			sess.Set("token", p.Form.Token)
 		}
 	}
 	renderTemplate(w, "user", p)
 }
 
-func updateProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+func updateProfile(w http.ResponseWriter, r *http.Request) {
+	sess := r.Context().Value(hnContextKey("sess")).(sessions.Session)
 	storedToken := sess.Get("token")
 	if storedToken == nil {
 		http.Error(w, "Invalid submission", http.StatusForbidden)

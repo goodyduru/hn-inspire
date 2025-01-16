@@ -230,7 +230,7 @@ func GetAuthMixed(userId, currentUserId int) ([]Post, error) {
 							)
 							SELECT favorited_posts.id, favorited_posts.title, favorited_posts.url, favorited_posts.text,
 							 	favorited_posts.votes, COALESCE(favorited_posts.parent_id, 0), favorited_posts.created_at, 
-								COALESCE(comment_count, 0), COALESCE(user_votes.user_id, 0), users.username, 
+								COALESCE(comment_count, 0), COALESCE(user_votes.user_id, 0), author_id, users.username, 
 								COALESCE(user_flags.user_id, 0)
 							FROM favorited_posts
 							LEFT JOIN comments_count ON favorited_posts.id=comments_count.ancestor
@@ -246,7 +246,7 @@ func GetAuthMixed(userId, currentUserId int) ([]Post, error) {
 	for rows.Next() {
 		var post Post
 		if err := rows.Scan(&post.ID, &post.Title, &post.Url, &post.Text, &post.Votes, &post.ParentID,
-			&post.CreatedAt, &post.NumReplies, &post.VotedID, &post.AuthorID, &post.FlaggedID); err != nil {
+			&post.CreatedAt, &post.NumReplies, &post.VotedID, &post.AuthorID, &post.Author, &post.FlaggedID); err != nil {
 			return nil, err
 		}
 		posts = append(posts, post)
@@ -275,7 +275,7 @@ func GetMixed(userId int) ([]Post, error) {
 							)
 							SELECT favorited_posts.id, favorited_posts.title, favorited_posts.url, favorited_posts.text,
 							 	favorited_posts.votes, COALESCE(favorited_posts.parent_id, 0), favorited_posts.created_at, 
-								COALESCE(comment_count, 0), users.username FROM favorited_posts
+								COALESCE(comment_count, 0), author_id, users.username FROM favorited_posts
 							LEFT JOIN comments_count ON favorited_posts.id=comments_count.ancestor
 							LEFT JOIN users ON favorited_posts.author_id=users.id
 							`, userId, LIMIT)
@@ -287,7 +287,7 @@ func GetMixed(userId int) ([]Post, error) {
 	for rows.Next() {
 		var post Post
 		if err := rows.Scan(&post.ID, &post.Title, &post.Url, &post.Text, &post.Votes, &post.ParentID,
-			&post.CreatedAt, &post.NumReplies, &post.AuthorID); err != nil {
+			&post.CreatedAt, &post.NumReplies, &post.AuthorID, &post.Author); err != nil {
 			return nil, err
 		}
 		posts = append(posts, post)

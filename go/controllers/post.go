@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -12,8 +11,8 @@ import (
 	"github.com/goodyduru/go-news/sessions"
 )
 
-func submitForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+func submitForm(w http.ResponseWriter, r *http.Request) {
+	sess := r.Context().Value(hnContextKey("sess")).(sessions.Session)
 	p := pageData{CurrentUser: sess.Get("user").(*models.User)}
 	f := generateToken()
 	sess.Set("token", f)
@@ -23,8 +22,8 @@ func submitForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func submit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+func submit(w http.ResponseWriter, r *http.Request) {
+	sess := r.Context().Value(hnContextKey("sess")).(sessions.Session)
 	storedToken := sess.Get("token")
 	if storedToken == nil {
 		http.Error(w, "Invalid submission", http.StatusForbidden)
@@ -81,8 +80,8 @@ func submit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func all(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+func all(w http.ResponseWriter, r *http.Request) {
+	sess := r.Context().Value(hnContextKey("sess")).(sessions.Session)
 	user := sess.Get("user")
 	p := &pageData{}
 	var posts []models.Post
@@ -103,7 +102,8 @@ func all(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "index", p)
 }
 
-func submitted(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func submitted(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	u := ctx.Value(hnContextKey("user")).(*models.User)
 	currentUser := sess.Get("user")
@@ -132,7 +132,8 @@ func submitted(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "index", p)
 }
 
-func favorites(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func favorites(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	u := ctx.Value(hnContextKey("user")).(*models.User)
 	currentUser := sess.Get("user")
@@ -157,7 +158,8 @@ func favorites(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "mixed", p)
 }
 
-func comments(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func comments(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	u := ctx.Value(hnContextKey("user")).(*models.User)
 	currentUser := sess.Get("user")
@@ -238,7 +240,8 @@ func addClasses(posts []models.Post) {
 	}
 }
 
-func single(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func single(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	post := ctx.Value(hnContextKey("post")).(models.Post)
 	user := sess.Get("user")
@@ -267,8 +270,8 @@ func single(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "single", p)
 }
 
-func reply(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+func reply(w http.ResponseWriter, r *http.Request) {
+	sess := r.Context().Value(hnContextKey("sess")).(sessions.Session)
 	storedToken := sess.Get("token")
 	if storedToken == nil {
 		http.Error(w, "Invalid submission", http.StatusForbidden)
@@ -322,8 +325,8 @@ func reply(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func replyForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+func replyForm(w http.ResponseWriter, r *http.Request) {
+	sess := r.Context().Value(hnContextKey("sess")).(sessions.Session)
 	user := sess.Get("user").(*models.User)
 	parent := r.URL.Query().Get("id")
 	url := r.URL.Query().Get("goto")
@@ -358,7 +361,8 @@ func replyForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "reply", pg)
 }
 
-func voteOrFlag(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func voteOrFlag(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	post := ctx.Value(hnContextKey("post")).(models.Post)
 	user := sess.Get("user")

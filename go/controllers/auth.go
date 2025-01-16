@@ -19,8 +19,8 @@ type loginPage struct {
 	Register string
 }
 
-func loginForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+func loginForm(w http.ResponseWriter, r *http.Request) {
+	sess := r.Context().Value(hnContextKey("sess")).(sessions.Session)
 	l := loginPage{
 		Login:    generateToken(),
 		Register: generateToken(),
@@ -32,7 +32,7 @@ func loginForm(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func authHandler(fn func(context.Context, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func authHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -61,16 +61,17 @@ func authHandler(fn func(context.Context, http.ResponseWriter, *http.Request)) h
 		ctx = context.WithValue(ctx, hnContextKey("sess"), sess)
 		ctx = context.WithValue(ctx, hnContextKey("token"), token)
 		ctx = context.WithValue(ctx, hnContextKey("page_data"), &pageData)
-		fn(ctx, w, r)
+		fn(w, r.WithContext(ctx))
 	}
 }
 
-func register(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func register(w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 	registerToken := r.PostFormValue("register-token")
 	registerErrors := make([]string, 0)
 	isValid := validateUsername(username)
+	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	token := ctx.Value(hnContextKey("token")).(string)
 	pageData := ctx.Value(hnContextKey("page_data")).(*loginPage)
@@ -111,11 +112,12 @@ func register(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func login(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func login(w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 	loginToken := r.PostFormValue("login-token")
 	loginErrors := make([]string, 0)
+	ctx := r.Context()
 	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
 	token := ctx.Value(hnContextKey("token")).(string)
 	pageData := ctx.Value(hnContextKey("page_data")).(*loginPage)
@@ -171,8 +173,8 @@ func verify(password, hash string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
-func logout(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sess := ctx.Value(hnContextKey("sess")).(sessions.Session)
+func logout(w http.ResponseWriter, r *http.Request) {
+	sess := r.Context().Value(hnContextKey("sess")).(sessions.Session)
 	user := sess.Get("user")
 	if user != nil {
 		sessions.GlobalSessions.SessionDestroy(w, r)
